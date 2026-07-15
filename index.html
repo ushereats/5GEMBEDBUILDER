@@ -90,7 +90,12 @@
   }
   .mode-switch button:not(.active):hover{ color:var(--forge-text); background: rgba(255,255,255,.04); }
 
-  .topbar-actions{ margin-left:auto; display:flex; gap:8px; }
+  .topbar-actions{ margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .template-select{
+    background: var(--forge-panel-raised); border:1px solid var(--forge-border);
+    color: var(--forge-text); padding:8px 10px; border-radius:8px;
+    font-size:13px; font-weight:600; cursor:pointer; max-width:180px;
+  }
   .btn{
     border:1px solid var(--forge-border); background: var(--forge-panel-raised);
     color: var(--forge-text); padding:8px 15px; border-radius:8px;
@@ -431,6 +436,12 @@
   .import-status.ok{ color: var(--forge-ok); }
   .import-status.err{ color: var(--forge-danger); }
   .import-status.idle{ color: var(--forge-text-dim); font-weight:500; }
+  .limit-warnings{ margin-bottom:10px; }
+  .limit-warnings:empty{ display:none; }
+  .limit-warnings .limit-warning{
+    display:flex; align-items:flex-start; gap:6px;
+    font-size:12px; color: var(--forge-danger); margin-top:4px; line-height:1.4;
+  }
 
   @media (max-width: 1200px){
     .workspace{ grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
@@ -454,6 +465,11 @@
       <button id="tab-cv2" onclick="setMode('cv2')">Components V2</button>
     </div>
     <div class="topbar-actions">
+      <select id="template-select" class="template-select" onchange="onTemplateSelectChange(this.value)">
+        <option value="">Load template...</option>
+      </select>
+      <button class="btn" onclick="saveTemplate()">Save as template</button>
+      <button class="btn danger" onclick="deleteSelectedTemplate()" title="Delete the selected template">🗑</button>
       <button class="btn" onclick="loadSample()">Load sample</button>
       <button class="btn danger" onclick="resetAll()">Reset</button>
       <button class="btn primary" onclick="downloadJSON()">Download JSON</button>
@@ -475,6 +491,7 @@
             <span class="copy-flash" id="copy-flash">Copied!</span>
           </div>
           <div id="import-status" class="import-status idle">Edit or paste JSON below — it builds and previews automatically as you type (after a short pause).</div>
+          <div id="limit-warnings" class="limit-warnings"></div>
           <textarea id="json-output" spellcheck="false" oninput="onJSONTextareaInput()"></textarea>
           <p class="hint">Works with clean JSON (<code>{content, embed/embeds}</code> or <code>{flags:32768, components}</code>) or a raw dump copied straight out of the Discord client — both get normalized automatically into whatever your bot's <code>/embed</code> command accepts.</p>
         </div>
@@ -519,20 +536,13 @@ const SELECT_KIND_LABELS = { 3:'String select', 5:'User select', 6:'Role select'
 
 /* Mention labels are normally resolved by Discord using guild context. Raw
    message dumps often contain only IDs, so the preview keeps a small lookup
-   table populated from any metadata present in the pasted payload. The two
-   channel overrides below cover the IDs from the supplied example dump. */
-const DEFAULT_MENTION_LOOKUP = {
-  channels: {
-    '1526469956789735594': 'dashboard',
-    '1526466051368288397': 'media-console'
-  },
-  users: {},
-  roles: {}
-};
-let mentionLookup = { channels:{...DEFAULT_MENTION_LOOKUP.channels}, users:{}, roles:{} };
+   table populated purely from whatever metadata is present in the pasted
+   payload — no names are pre-filled, since any hardcoded ID here would
+   only ever be correct for one specific test message. */
+let mentionLookup = { channels:{}, users:{}, roles:{} };
 
 function resetMentionLookup(){
-  mentionLookup = { channels:{...DEFAULT_MENTION_LOOKUP.channels}, users:{}, roles:{} };
+  mentionLookup = { channels:{}, users:{}, roles:{} };
 }
 
 function addMentionName(kind, id, name){
@@ -804,7 +814,7 @@ function renderClassicBuilder(){
     <div class="section-block">
       <div class="section-title">Message content</div>
       <label class="field-label">Text above the embed (optional)</label>
-      <textarea oninput="classicState.content=this.value; refreshPreview()" placeholder="Plain message text...">${escapeHTML(classicState.content)}</textarea>
+      <textarea oninput="classicState.content=this.value; refreshPreviewDebounced()" placeholder="Plain message text...">${escapeHTML(classicState.content)}</textarea>
     </div>
 
     <div class="embed-tabs">${tabs}</div>
@@ -925,12 +935,12 @@ function addLegacyButton(ri){ classicState.buttonRows[ri].push({style:5, label:'
 function removeLegacyButton(ri, bi){ classicState.buttonRows[ri].splice(bi,1); renderAll(); }
 function legacyBtn_upd(ri, bi, key, val){
   classicState.buttonRows[ri][bi][key] = (key==='style' ? parseInt(val) : val);
-  if(key==='style') renderAll(); else refreshPreview();
+  if(key==='style') renderAll(); else refreshPreviewDebounced();
 }
-function e_upd(key, val){ classicState.embeds[activeEmbedIdx][key] = val; refreshPreview(); }
-function e_updNested(group, key, val){ classicState.embeds[activeEmbedIdx][group][key] = val; refreshPreview(); }
+function e_upd(key, val){ classicState.embeds[activeEmbedIdx][key] = val; refreshPreviewDebounced(); }
+function e_updNested(group, key, val){ classicState.embeds[activeEmbedIdx][group][key] = val; refreshPreviewDebounced(); }
 function e_toggleColor(enabled){ classicState.embeds[activeEmbedIdx].color_enabled = enabled; renderAll(); }
-function f_upd(i, key, val){ classicState.embeds[activeEmbedIdx].fields[i][key] = val; refreshPreview(); }
+function f_upd(i, key, val){ classicState.embeds[activeEmbedIdx].fields[i][key] = val; refreshPreviewDebounced(); }
 function addField(){ classicState.embeds[activeEmbedIdx].fields.push(newField()); renderAll(); }
 function removeField(i){ classicState.embeds[activeEmbedIdx].fields.splice(i,1); renderAll(); }
 function addEmbed(){ classicState.embeds.push(newEmbed()); activeEmbedIdx = classicState.embeds.length-1; renderAll(); }
@@ -1100,7 +1110,7 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
   return '';
 }
 
-function c_upd(key, val){ cv2State.containers[activeContainerIdx][key] = val; refreshPreview(); }
+function c_upd(key, val){ cv2State.containers[activeContainerIdx][key] = val; refreshPreviewDebounced(); }
 function c_toggleColor(enabled){ cv2State.containers[activeContainerIdx].color_enabled = enabled; renderAll(); }
 function addContainer(){ cv2State.containers.push(newContainer()); activeContainerIdx = cv2State.containers.length-1; renderAll(); }
 function removeContainer(i){
@@ -1129,7 +1139,7 @@ function moveChild(i, dir){
   [arr[i], arr[j]] = [arr[j], arr[i]];
   renderAll();
 }
-function ch_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreview(); }
+function ch_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreviewDebounced(); }
 function addButton(i){
   cv2State.containers[activeContainerIdx].children[i].buttons.push({style:5, label:'', url:'', emoji:''});
   renderAll();
@@ -1137,17 +1147,17 @@ function addButton(i){
 function removeButton(i, bi){ cv2State.containers[activeContainerIdx].children[i].buttons.splice(bi,1); renderAll(); }
 function btn_upd(i, bi, key, val){
   cv2State.containers[activeContainerIdx].children[i].buttons[bi][key] = (key==='style'? parseInt(val) : val);
-  if(key==='style') renderAll(); else refreshPreview();
+  if(key==='style') renderAll(); else refreshPreviewDebounced();
 }
 
-function sel_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreview(); }
+function sel_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreviewDebounced(); }
 function sel_updKind(i, val){ cv2State.containers[activeContainerIdx].children[i].kind = parseInt(val); renderAll(); }
 function addSelectOption(i){
   cv2State.containers[activeContainerIdx].children[i].options.push({label:'', value:'', description:'', emoji:''});
   renderAll();
 }
 function removeSelectOption(i, oi){ cv2State.containers[activeContainerIdx].children[i].options.splice(oi,1); renderAll(); }
-function selopt_upd(i, oi, key, val){ cv2State.containers[activeContainerIdx].children[i].options[oi][key] = val; refreshPreview(); }
+function selopt_upd(i, oi, key, val){ cv2State.containers[activeContainerIdx].children[i].options[oi][key] = val; refreshPreviewDebounced(); }
 
 /* Shorthand <-> Discord emoji-object conversion, used for buttons and
    select options. Type either a raw unicode emoji (😀) or Discord's custom
@@ -1494,8 +1504,97 @@ function currentJSON(){
   return mode==='classic' ? buildClassicJSON() : buildCV2JSON();
 }
 
+/* Real Discord API limits — these are hard rejections, not stylistic
+   preferences. Surfacing them here means you find out BEFORE pasting into
+   your bot, not after Discord's error comes back. */
+const DISCORD_LIMITS = {
+  content: 2000, title: 256, description: 4096, fieldName: 256, fieldValue: 1024,
+  fieldCount: 25, footerText: 2048, authorName: 256, embedTotalChars: 6000,
+  embedCount: 10, buttonLabel: 80, textDisplay: 4000, containerChildren: 10,
+  totalComponents: 40, legacyRows: 5, legacyRowButtons: 5, selectOptionsMax: 25
+};
+
+function countCV2Components(containers){
+  let total = 0;
+  const countChild = (ch) => {
+    total += 1;
+    if(ch.type === 'section') total += 1; // its own thumbnail/text child
+    if(ch.type === 'actionrow') total += 1 + ch.buttons.length;
+    if(ch.type === 'select') total += 2; // wrapping action row + the select itself
+    if(ch.type === 'raw' && ch.original) total += 1;
+  };
+  for(const c of containers){
+    total += 1; // the container itself
+    c.children.forEach(countChild);
+  }
+  return total;
+}
+
+function computeLimitWarnings(){
+  const warnings = [];
+  const L = DISCORD_LIMITS;
+
+  if(mode === 'classic'){
+    if(classicState.content.length > L.content){
+      warnings.push(`Message content is ${classicState.content.length}/${L.content} characters.`);
+    }
+    if(classicState.embeds.length > L.embedCount){
+      warnings.push(`${classicState.embeds.length}/${L.embedCount} embeds — Discord allows at most ${L.embedCount} per message.`);
+    }
+    classicState.embeds.forEach((e, idx) => {
+      const tag = classicState.embeds.length > 1 ? `Embed ${idx+1}: ` : '';
+      if(e.title.length > L.title) warnings.push(`${tag}Title is ${e.title.length}/${L.title} characters.`);
+      if(e.description.length > L.description) warnings.push(`${tag}Description is ${e.description.length}/${L.description} characters.`);
+      if(e.footer.text.length > L.footerText) warnings.push(`${tag}Footer text is ${e.footer.text.length}/${L.footerText} characters.`);
+      if(e.author.name.length > L.authorName) warnings.push(`${tag}Author name is ${e.author.name.length}/${L.authorName} characters.`);
+      if(e.fields.length > L.fieldCount) warnings.push(`${tag}${e.fields.length}/${L.fieldCount} fields.`);
+      e.fields.forEach((f, fi) => {
+        if(f.name.length > L.fieldName) warnings.push(`${tag}Field ${fi+1} name is ${f.name.length}/${L.fieldName} characters.`);
+        if(f.value.length > L.fieldValue) warnings.push(`${tag}Field ${fi+1} value is ${f.value.length}/${L.fieldValue} characters.`);
+      });
+      const total = e.title.length + e.description.length + e.footer.text.length + e.author.name.length
+        + e.fields.reduce((sum,f)=>sum+f.name.length+f.value.length, 0);
+      if(total > L.embedTotalChars) warnings.push(`${tag}Combined embed text is ${total}/${L.embedTotalChars} characters (Discord's total limit across title+description+fields+footer+author).`);
+    });
+    if(classicState.buttonRows.length > L.legacyRows){
+      warnings.push(`${classicState.buttonRows.length}/${L.legacyRows} button rows.`);
+    }
+    classicState.buttonRows.forEach((row, ri) => {
+      if(row.length > L.legacyRowButtons) warnings.push(`Button row ${ri+1} has ${row.length}/${L.legacyRowButtons} buttons.`);
+      row.forEach((b, bi) => { if((b.label||'').length > L.buttonLabel) warnings.push(`Button row ${ri+1}, button ${bi+1}: label is ${b.label.length}/${L.buttonLabel} characters.`); });
+    });
+  } else {
+    const total = countCV2Components(cv2State.containers);
+    if(total > L.totalComponents) warnings.push(`${total}/${L.totalComponents} total components (everything nested included) — Discord will reject this.`);
+    cv2State.containers.forEach((c, ci) => {
+      const tag = cv2State.containers.length > 1 ? `Container ${ci+1}: ` : '';
+      if(c.children.length > L.containerChildren) warnings.push(`${tag}${c.children.length}/${L.containerChildren} children.`);
+      c.children.forEach((ch, chi) => {
+        if(ch.type === 'text' && ch.content.length > L.textDisplay) warnings.push(`${tag}Text ${chi+1} is ${ch.content.length}/${L.textDisplay} characters.`);
+        if(ch.type === 'section' && ch.content.length > L.textDisplay) warnings.push(`${tag}Section ${chi+1} text is ${ch.content.length}/${L.textDisplay} characters.`);
+        if(ch.type === 'actionrow'){
+          if(ch.buttons.length > L.legacyRowButtons) warnings.push(`${tag}Button row ${chi+1} has ${ch.buttons.length}/${L.legacyRowButtons} buttons.`);
+          ch.buttons.forEach((b, bi) => { if((b.label||'').length > L.buttonLabel) warnings.push(`${tag}Button row ${chi+1}, button ${bi+1}: label is ${b.label.length}/${L.buttonLabel} characters.`); });
+        }
+        if(ch.type === 'select' && ch.kind === 3 && ch.options.length > L.selectOptionsMax){
+          warnings.push(`${tag}Select ${chi+1} has ${ch.options.length}/${L.selectOptionsMax} options.`);
+        }
+      });
+    });
+  }
+
+  return warnings;
+}
+
+function renderLimitWarnings(){
+  const el = document.getElementById('limit-warnings');
+  const warnings = computeLimitWarnings();
+  el.innerHTML = warnings.map(w => `<div class="limit-warning">⚠ ${escapeHTML(w)}</div>`).join('');
+}
+
 function renderJSON(){
   document.getElementById('json-output').value = JSON.stringify(currentJSON(), null, 2);
+  renderLimitWarnings();
   const statusEl = document.getElementById('import-status');
   statusEl.textContent = 'In sync with the builder above.';
   statusEl.className = 'import-status idle';
@@ -1797,6 +1896,101 @@ function runAutoImport(){
 /* =========================================================================
    SAMPLE / RESET
    ========================================================================= */
+/* =========================================================================
+   TEMPLATES — localStorage save/load. This is a static, backend-less page,
+   so localStorage is the only persistence available; it's per-browser,
+   not synced anywhere, and gets cleared if the user clears site data.
+   ========================================================================= */
+const TEMPLATE_INDEX_KEY = 'embedforge:index';
+const TEMPLATE_PREFIX = 'embedforge:tpl:';
+
+function getTemplateIndex(){
+  try{
+    const raw = localStorage.getItem(TEMPLATE_INDEX_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch{
+    return [];
+  }
+}
+
+function setTemplateIndex(names){
+  localStorage.setItem(TEMPLATE_INDEX_KEY, JSON.stringify(names));
+}
+
+function renderTemplateDropdown(selectedName){
+  const el = document.getElementById('template-select');
+  const names = getTemplateIndex();
+  el.innerHTML = '<option value="">Load template...</option>' +
+    names.map(n => `<option value="${attr(n)}" ${n===selectedName?'selected':''}>${escapeHTML(n)}</option>`).join('');
+}
+
+function saveTemplate(){
+  const suggested = mode === 'classic'
+    ? (classicState.embeds[0]?.title || 'Untitled embed')
+    : 'Untitled CV2 message';
+  const name = prompt('Save this as a template named:', suggested);
+  if(!name || !name.trim()) return;
+  const trimmed = name.trim();
+
+  const blob = { mode, classicState, cv2State };
+  try{
+    localStorage.setItem(TEMPLATE_PREFIX + trimmed, JSON.stringify(blob));
+  } catch(err){
+    alert('Could not save — your browser\'s local storage may be full or disabled.\n\n' + err.message);
+    return;
+  }
+
+  const names = getTemplateIndex();
+  if(!names.includes(trimmed)){
+    names.push(trimmed);
+    setTemplateIndex(names);
+  }
+  renderTemplateDropdown(trimmed);
+}
+
+function onTemplateSelectChange(name){
+  if(!name) return;
+  loadTemplate(name);
+}
+
+function loadTemplate(name){
+  let blob;
+  try{
+    const raw = localStorage.getItem(TEMPLATE_PREFIX + name);
+    if(!raw){ alert('That template no longer exists.'); return; }
+    blob = JSON.parse(raw);
+  } catch(err){
+    alert('Could not load that template: ' + err.message);
+    return;
+  }
+
+  if(blob.classicState) classicState = blob.classicState;
+  if(blob.cv2State) cv2State = blob.cv2State;
+  activeEmbedIdx = 0;
+  activeContainerIdx = 0;
+  mode = blob.mode === 'cv2' ? 'cv2' : 'classic';
+
+  document.getElementById('tab-classic').classList.toggle('active', mode==='classic');
+  document.getElementById('tab-cv2').classList.toggle('active', mode==='cv2');
+  document.getElementById('builder-classic').style.display = mode==='classic' ? 'block':'none';
+  document.getElementById('builder-cv2').style.display = mode==='cv2' ? 'block':'none';
+  renderTemplateDropdown(name);
+  renderAll();
+}
+
+function deleteSelectedTemplate(){
+  const select = document.getElementById('template-select');
+  const name = select.value;
+  if(!name){ alert('Pick a template from the dropdown first.'); return; }
+  if(!confirm(`Delete the template "${name}"? This can't be undone.`)) return;
+
+  localStorage.removeItem(TEMPLATE_PREFIX + name);
+  const names = getTemplateIndex().filter(n => n !== name);
+  setTemplateIndex(names);
+  renderTemplateDropdown();
+}
+
 function loadSample(){
   if(mode==='classic'){
     classicState = {
@@ -1861,12 +2055,24 @@ function refreshPreview(){
   renderJSON();
 }
 
+/* Typing in a text field calls refreshPreview() on every keystroke. That's
+   fine for small embeds, but a large CV2 message (many containers/fields)
+   re-parses all its markdown and rebuilds the whole JSON string on every
+   single character. Debouncing this (not the input itself — just the
+   preview/JSON refresh) keeps typing responsive regardless of size. */
+let refreshPreviewTimer = null;
+function refreshPreviewDebounced(){
+  clearTimeout(refreshPreviewTimer);
+  refreshPreviewTimer = setTimeout(refreshPreview, 120);
+}
+
 function renderAll(){
   if(mode==='classic') renderClassicBuilder(); else renderCV2Builder();
   refreshPreview();
 }
 
 renderAll();
+renderTemplateDropdown();
 </script>
 </body>
 </html>
