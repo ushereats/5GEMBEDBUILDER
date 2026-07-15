@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 <title>Embed Forge — Discord Embed &amp; Component Builder</title>
 <style>
   :root{
@@ -1191,7 +1193,7 @@ function onJSONTextareaInput(){
   const statusEl = document.getElementById('import-status');
   statusEl.textContent = 'Typing...';
   statusEl.className = 'import-status idle';
-  importDebounceTimer = setTimeout(runAutoImport, 550);
+  importDebounceTimer = setTimeout(runAutoImport, 300);
 }
 
 function runAutoImport(){
