@@ -289,6 +289,15 @@
   .md-rich .md-subtext{ color:#949ba4; font-size:.75em; }
   .md-emoji{ height:1.375em; width:1.375em; vertical-align:-0.3em; object-fit:contain; }
   .md-emoji.jumbo{ height:2.75em; width:2.75em; vertical-align:-0.6em; }
+  .md-mention{
+    background: rgba(88,101,242,.3); color:#c9cdfb;
+    padding: 0 2px; border-radius:3px; font-weight:500; cursor:default;
+  }
+  .md-mention:hover{ background: rgba(88,101,242,.5); text-decoration:underline; }
+  .md-timestamp{
+    background: rgba(78,80,88,.3); color: var(--dc-text);
+    padding: 1px 4px; border-radius:3px; cursor:default;
+  }
 
   .json-pane{ padding:20px; }
   .json-pane textarea{
@@ -375,7 +384,7 @@ function newEmbed(){
 }
 function newField(){ return { name:'', value:'', inline:false }; }
 
-let classicState = { content:'', embeds:[ newEmbed() ] };
+let classicState = { content:'', embeds:[ newEmbed() ], buttonRows:[] };
 let activeEmbedIdx = 0;
 
 function newContainer(){ return { accent_color:'#5865f2', color_enabled:true, children:[] }; }
@@ -465,6 +474,18 @@ function renderMarkdown(raw){
     return `<img class="md-emoji" src="https://cdn.discordapp.com/emojis/${id}.${ext}" alt=":${name}:" title=":${name}:">`;
   });
 
+  // Mentions and timestamps — Discord's own special syntax. This tool has
+  // no live Discord API access, so real usernames/channel names/role names
+  // can't be resolved — these render as generic placeholder pills styled
+  // exactly like Discord's real mention chips, rather than raw bracket text.
+  s = s.replace(/&lt;@&amp;(\d+)&gt;/g, '<span class="md-mention">@role</span>');
+  s = s.replace(/&lt;@!?(\d+)&gt;/g, '<span class="md-mention">@user</span>');
+  s = s.replace(/&lt;#(\d+)&gt;/g, '<span class="md-mention">#channel</span>');
+  s = s.replace(/&lt;t:(-?\d+)(?::([tTdDfFR]))?&gt;/g, (m, unix, fmt) => {
+    const text = formatDiscordTimestamp(parseInt(unix), fmt || 'f');
+    return `<span class="md-timestamp">${escapeHTML(text)}</span>`;
+  });
+
   s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
   s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>');
   s = s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -485,6 +506,39 @@ function renderMarkdown(raw){
 
   s = s.replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[i]);
   return s;
+}
+
+function formatDiscordTimestamp(unixSeconds, fmt){
+  const d = new Date(unixSeconds * 1000);
+  if(isNaN(d.getTime())) return 'Invalid Date';
+  const dateOpts = { year:'numeric', month:'long', day:'numeric' };
+  const shortDateOpts = { year:'numeric', month:'2-digit', day:'2-digit' };
+  const timeOpts = { hour:'numeric', minute:'2-digit' };
+  const longTimeOpts = { hour:'numeric', minute:'2-digit', second:'2-digit' };
+
+  switch(fmt){
+    case 't': return d.toLocaleTimeString([], timeOpts);
+    case 'T': return d.toLocaleTimeString([], longTimeOpts);
+    case 'd': return d.toLocaleDateString([], shortDateOpts);
+    case 'D': return d.toLocaleDateString([], dateOpts);
+    case 'f': return d.toLocaleDateString([], dateOpts) + ' ' + d.toLocaleTimeString([], timeOpts);
+    case 'F': return d.toLocaleDateString([], {...dateOpts, weekday:'long'}) + ' ' + d.toLocaleTimeString([], timeOpts);
+    case 'R': {
+      const diffMs = d.getTime() - Date.now();
+      const diffSec = Math.round(diffMs / 1000);
+      const abs = Math.abs(diffSec);
+      const units = [['year',31536000],['month',2592000],['week',604800],['day',86400],['hour',3600],['minute',60],['second',1]];
+      for(const [name, secs] of units){
+        if(abs >= secs || name === 'second'){
+          const val = Math.round(abs / secs);
+          const plural = val === 1 ? name : name + 's';
+          return diffSec >= 0 ? `in ${val} ${plural}` : `${val} ${plural} ago`;
+        }
+      }
+      return 'just now';
+    }
+    default: return d.toLocaleDateString([], dateOpts) + ' ' + d.toLocaleTimeString([], timeOpts);
+  }
 }
 
 function hexToInt(hex){
@@ -586,9 +640,50 @@ function renderClassicBuilder(){
     </div>
 
     ${classicState.embeds.length<10 ? `<button class="add-btn" onclick="addEmbed()">+ Add another embed</button>` : ''}
+
+    <div class="section-block">
+      <div class="section-title">Buttons (legacy action rows) <span style="color:var(--forge-text-dim); font-weight:600;">${classicState.buttonRows.length}/5 rows</span></div>
+      <p class="hint" style="margin-top:0;">These sit alongside the content/embed above — this is Discord's original button system (predates Components V2), not the newer Container-based one.</p>
+      ${classicState.buttonRows.map((row, ri) => `
+        <div class="subcard">
+          <div class="subcard-head">
+            <span class="idx">Row ${ri+1} <span style="color:var(--forge-text-dim); font-weight:600;">(${row.length}/5)</span></span>
+            <button class="icon-btn" onclick="removeButtonRow(${ri})">✕</button>
+          </div>
+          ${row.map((b, bi) => `
+            <div class="subcard" style="background:#1b1d27;">
+              <div class="subcard-head">
+                <span class="idx">Button ${bi+1}</span>
+                <button class="icon-btn" onclick="removeLegacyButton(${ri},${bi})">✕</button>
+              </div>
+              <select onchange="legacyBtn_upd(${ri},${bi},'style',this.value)">
+                <option value="5" ${b.style==5?'selected':''}>Link (functional)</option>
+                <option value="1" ${b.style==1?'selected':''}>Primary (visual only)</option>
+                <option value="2" ${b.style==2?'selected':''}>Secondary (visual only)</option>
+                <option value="3" ${b.style==3?'selected':''}>Success (visual only)</option>
+                <option value="4" ${b.style==4?'selected':''}>Danger (visual only)</option>
+              </select>
+              <input type="text" style="margin-top:8px;" value="${escapeHTML(b.label)}" oninput="legacyBtn_upd(${ri},${bi},'label',this.value)" placeholder="Button label">
+              <input type="text" style="margin-top:8px;" value="${escapeHTML(b.emoji||'')}" oninput="legacyBtn_upd(${ri},${bi},'emoji',this.value)" placeholder="Emoji (😀 or <:name:1234567890>)">
+              ${b.style==5 ? `<input type="url" style="margin-top:8px;" value="${escapeHTML(b.url)}" oninput="legacyBtn_upd(${ri},${bi},'url',this.value)" placeholder="https://... (required for link buttons)">` : ''}
+            </div>
+          `).join('')}
+          ${row.length<5 ? `<button class="add-btn" onclick="addLegacyButton(${ri})">+ Add button to this row</button>` : ''}
+        </div>
+      `).join('')}
+      ${classicState.buttonRows.length<5 ? `<button class="add-btn" onclick="addButtonRow()">+ Add button row</button>` : ''}
+    </div>
   `;
 }
 
+function addButtonRow(){ classicState.buttonRows.push([]); renderAll(); }
+function removeButtonRow(ri){ classicState.buttonRows.splice(ri,1); renderAll(); }
+function addLegacyButton(ri){ classicState.buttonRows[ri].push({style:5, label:'', url:'', emoji:''}); renderAll(); }
+function removeLegacyButton(ri, bi){ classicState.buttonRows[ri].splice(bi,1); renderAll(); }
+function legacyBtn_upd(ri, bi, key, val){
+  classicState.buttonRows[ri][bi][key] = (key==='style' ? parseInt(val) : val);
+  if(key==='style') renderAll(); else refreshPreview();
+}
 function e_upd(key, val){ classicState.embeds[activeEmbedIdx][key] = val; refreshPreview(); }
 function e_updNested(group, key, val){ classicState.embeds[activeEmbedIdx][group][key] = val; refreshPreview(); }
 function e_toggleColor(enabled){ classicState.embeds[activeEmbedIdx].color_enabled = enabled; renderAll(); }
@@ -890,6 +985,12 @@ function renderClassicPreview(){
     `;
   }).join('');
 
+  const buttonRowsHTML = classicState.buttonRows
+    .filter(row => row.length)
+    .map(row => `<div class="dc-actionrow" style="margin-top:6px;">${row.map(b =>
+      `<button class="dc-button style-${b.style}">${b.emoji?renderEmojiShorthand(b.emoji)+' ':''}${escapeHTML(b.label)||'Button'}</button>`
+    ).join('')}</div>`).join('');
+
   wrap.innerHTML = `
     <div class="dc-message">
       <div class="dc-avatar">🤖</div>
@@ -901,6 +1002,7 @@ function renderClassicPreview(){
         </div>
         <div class="dc-content md-rich">${renderMarkdown(classicState.content)}</div>
         ${embedsHTML || (!classicState.content ? `<div class="dc-e-empty">Nothing to preview yet — fill in a field on the left.</div>` : '')}
+        ${buttonRowsHTML}
       </div>
     </div>
   `;
@@ -996,6 +1098,20 @@ function buildClassicJSON(){
 
   if(embeds.length === 1) payload.embed = embeds[0];
   else if(embeds.length > 1) payload.embeds = embeds;
+
+  const rows = classicState.buttonRows
+    .filter(row => row.length)
+    .map(row => ({
+      type: 1,
+      components: row.map(b => {
+        const btn = { type:2, style:b.style, label:b.label||'Button' };
+        if(b.style===5) btn.url = b.url||'';
+        const emoji = shorthandToEmojiObj(b.emoji);
+        if(emoji) btn.emoji = emoji;
+        return btn;
+      })
+    }));
+  if(rows.length) payload.components = rows;
 
   return payload;
 }
@@ -1199,7 +1315,7 @@ function normalizeEmbedDict(raw){
 }
 
 function buildClassicStateFromPayload(parsed){
-  const state = { content: parsed.content ?? '', embeds: [] };
+  const state = { content: parsed.content ?? '', embeds: [], buttonRows: [] };
   if(Array.isArray(parsed.embeds) && parsed.embeds.length){
     state.embeds = parsed.embeds.map(normalizeEmbedDict);
   } else if(parsed.embed){
@@ -1207,6 +1323,25 @@ function buildClassicStateFromPayload(parsed){
   } else {
     state.embeds = [newEmbed()];
   }
+
+  if(Array.isArray(parsed.components)){
+    for(const row of parsed.components){
+      if(!row || row.type !== 1) continue;
+      const kids = row.components || [];
+      const allButtons = kids.length > 0 && kids.every(k => k && k.type === 2);
+      if(allButtons){
+        state.buttonRows.push(kids.map(b => ({
+          style: b.style ?? 5, label: b.label ?? '', url: b.url ?? '',
+          emoji: emojiObjToShorthand(b.emoji)
+        })));
+      }
+      // Rows containing a select menu aren't supported in the legacy
+      // builder's UI yet — skipped rather than crashing, but this is a
+      // real gap: a legacy row with a select menu currently has nowhere
+      // to go and gets dropped, same as buttons used to before this fix.
+    }
+  }
+
   return state;
 }
 
@@ -1353,7 +1488,10 @@ function loadSample(){
           {name:'Getting started', value:'Read the rules first.', inline:true},
           {name:'Need help?', value:'Ping a moderator.', inline:true},
         ]
-      }]
+      }],
+      buttonRows:[
+        [{style:5, label:'Read the rules', url:'https://discord.com', emoji:''}]
+      ]
     };
     activeEmbedIdx = 0;
   } else {
@@ -1380,7 +1518,7 @@ function loadSample(){
 }
 
 function resetAll(){
-  if(mode==='classic'){ classicState = {content:'', embeds:[newEmbed()]}; activeEmbedIdx = 0; }
+  if(mode==='classic'){ classicState = {content:'', embeds:[newEmbed()], buttonRows:[]}; activeEmbedIdx = 0; }
   else { cv2State = {containers:[newContainer()]}; activeContainerIdx = 0; }
   renderAll();
 }
