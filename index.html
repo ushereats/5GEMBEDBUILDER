@@ -222,7 +222,8 @@
   .pane-body::-webkit-scrollbar-thumb:hover{ background: var(--forge-brass-dim); }
 
   .discord-pane{
-    background: var(--dc-chat-bg); min-height:100%; padding:24px 24px 60px;
+    background:#323339; min-height:100%; padding:24px 24px 60px;
+    font-family:"gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
   .dc-message{ display:flex; gap:16px; max-width:780px; }
   .dc-avatar{
@@ -243,8 +244,8 @@
   .dc-content:empty{ display:none; }
 
   .dc-embed{
-    display:flex; max-width:550px; margin-top:4px; border-radius:4px; overflow:hidden;
-    background: var(--dc-card-bg); border: 1px solid rgba(0,0,0,.15);
+    display:flex; width:100%; max-width:520px; margin-top:4px; border-radius:4px; overflow:hidden;
+    background: var(--dc-card-bg); border:1px solid rgba(0,0,0,.15);
   }
   .dc-embed .dc-embed-accent{ width:4px; flex-shrink:0; background: var(--dc-blurple); }
   .dc-embed .dc-embed-body{ padding:12px 16px; flex:1; min-width:0; display:flex; align-items:flex-start; gap:16px; }
@@ -270,23 +271,63 @@
 
   .dc-e-empty{ color: var(--dc-text-muted); font-size:13px; font-style:italic; padding:20px; text-align:center; }
 
+  /* Components V2 containers use a different surface from classic embeds.
+     These measurements and colours mirror Discord's current desktop client. */
   .dc-container{
-    max-width:550px; margin-top:6px; border-radius:8px; overflow:hidden;
-    background: var(--dc-card-bg); border-left: 4px solid var(--dc-blurple);
-    padding:12px 14px; display:flex; flex-direction:column; gap:10px;
+    width:100%; max-width:490px; margin-top:8px; border-radius:8px; overflow:hidden;
+    background:#393a41; border:1px solid #44454c; border-left:4px solid var(--dc-blurple);
+    padding:16px 16px 15px 13px; display:flex; flex-direction:column; gap:10px;
+    font-family:"gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
-  .dc-container.no-accent{ border-left-color: var(--dc-card-border); }
-  .dc-textdisplay{ color: var(--dc-text); font-size:14.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
-  .dc-separator{ height:1px; background:#3f4147; margin:2px 0; }
-  .dc-section{ display:flex; gap:12px; align-items:flex-start; }
-  .dc-section .dc-textdisplay{ flex:1; }
-  .dc-section-thumb{ width:64px; height:64px; border-radius:6px; object-fit:cover; flex-shrink:0; background:#1e1f22; }
+  .dc-container.no-accent{
+    border-left-width:1px; border-left-color:#44454c !important; padding-left:16px;
+  }
+  .dc-textdisplay{
+    color:#d7d8dc; font-size:14px; line-height:1.375; white-space:pre-wrap; word-break:break-word; min-width:0;
+  }
+  .dc-separator{ height:1px; background:#4c4c54; margin:0; flex-shrink:0; }
+  .dc-section{ display:flex; gap:16px; align-items:flex-start; min-width:0; }
+  .dc-section .dc-textdisplay{ flex:1; min-width:0; }
+  .dc-section-thumb{
+    width:85px; height:85px; border-radius:6px; object-fit:cover; flex-shrink:0; background:#1e1f22;
+  }
   .dc-gallery{ display:grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap:6px; }
   .dc-gallery img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; background:#1e1f22; }
   .dc-gallery-single{
     display:block; width:100%; max-height:300px; object-fit:cover;
     border-radius:6px; background:#1e1f22;
   }
+
+  /* Components V2 text displays follow normal Discord message markdown, not
+     the smaller classic-embed typography. Keep these overrides scoped so the
+     classic embed preview remains accurate. */
+  .dc-container .md-rich h1{
+    color:#fff; font-size:24px; line-height:1.25; font-weight:700; letter-spacing:-.015em; margin:0 0 8px;
+  }
+  .dc-container .md-rich h2{
+    color:#fff; font-size:20px; line-height:1.25; font-weight:700; letter-spacing:-.01em; margin:0 0 6px;
+  }
+  .dc-container .md-rich h3{
+    color:#fff; font-size:16px; line-height:1.25; font-weight:700; margin:0 0 4px;
+  }
+  .dc-container .md-rich blockquote{
+    margin:0; padding:0 0 0 12px; border-left:4px solid #595a63; border-radius:2px; color:#c9cbd0;
+  }
+  .dc-container .md-rich code{
+    background:#3c3d4f; color:#fff; border:1px solid #4e4f5f;
+    padding:.1em .32em; border-radius:4px; font-family:Consolas, "Courier New", monospace; font-size:.85em;
+  }
+  .dc-container .md-rich pre{
+    width:100%; margin:0; padding:8px; overflow-x:auto;
+    background:#3c3d4f; color:#fff; border:1px solid #4e4f5f; border-radius:5px;
+    font-family:Consolas, "Courier New", monospace; font-size:13px; line-height:1.4;
+    white-space:pre;
+  }
+  .dc-container .md-rich pre code{
+    background:none; border:0; padding:0; border-radius:0; font-size:1em;
+  }
+  .dc-container .md-rich a{ color:#69aef0 !important; }
+  .dc-container .md-rich ul.md-list, .dc-container .md-rich ol.md-list{ margin:0; }
   .dc-actionrow{ display:flex; gap:8px; flex-wrap:wrap; }
   .dc-button{
     padding:7px 14px; border-radius:6px; font-size:13.5px; font-weight:500;
@@ -450,6 +491,58 @@ let activeContainerIdx = 0;
 
 const SELECT_KIND_LABELS = { 3:'String select', 5:'User select', 6:'Role select', 7:'Mentionable select', 8:'Channel select' };
 
+/* Mention labels are normally resolved by Discord using guild context. Raw
+   message dumps often contain only IDs, so the preview keeps a small lookup
+   table populated from any metadata present in the pasted payload. The two
+   channel overrides below cover the IDs from the supplied example dump. */
+const DEFAULT_MENTION_LOOKUP = {
+  channels: {
+    '1526469956789735594': 'dashboard',
+    '1526466051368288397': 'media-console'
+  },
+  users: {},
+  roles: {}
+};
+let mentionLookup = { channels:{...DEFAULT_MENTION_LOOKUP.channels}, users:{}, roles:{} };
+
+function resetMentionLookup(){
+  mentionLookup = { channels:{...DEFAULT_MENTION_LOOKUP.channels}, users:{}, roles:{} };
+}
+
+function addMentionName(kind, id, name){
+  if(!id || !name || !mentionLookup[kind]) return;
+  mentionLookup[kind][String(id)] = String(name).replace(/^[@#]/, '');
+}
+
+function hydrateMentionLookup(payload){
+  resetMentionLookup();
+  if(!payload || typeof payload !== 'object') return;
+
+  const addList = (list, kind, nameKeys) => {
+    if(!Array.isArray(list)) return;
+    for(const item of list){
+      if(!item || typeof item !== 'object') continue;
+      const name = nameKeys.map(k => item[k]).find(v => typeof v === 'string' && v.trim());
+      addMentionName(kind, item.id ?? item.channel_id ?? item.user_id ?? item.role_id, name);
+    }
+  };
+
+  addList(payload.mentionChannels, 'channels', ['name','rawName','channelName']);
+  addList(payload.mentions, 'users', ['globalName','displayName','username','name']);
+  addList(payload.mentionRoles, 'roles', ['name','rawName','roleName']);
+
+  // Also accept optional maps in cleaner bot payloads.
+  const mapSources = [
+    ['channels', payload.channel_names ?? payload.channelNames],
+    ['users', payload.user_names ?? payload.userNames],
+    ['roles', payload.role_names ?? payload.roleNames]
+  ];
+  for(const [kind, map] of mapSources){
+    if(!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    for(const [id, name] of Object.entries(map)) addMentionName(kind, id, name);
+  }
+}
+
 /* =========================================================================
    MODE / TAB SWITCHING
    ========================================================================= */
@@ -539,13 +632,18 @@ function renderMarkdownCore(raw, blockLevel){
     return `<img class="md-emoji" src="https://cdn.discordapp.com/emojis/${id}.${ext}" alt=":${name}:" title=":${name}:">`;
   });
 
-  // Mentions and timestamps — Discord's own special syntax. This tool has
-  // no live Discord API access, so real usernames/channel names/role names
-  // can't be resolved — these render as generic placeholder pills styled
-  // exactly like Discord's real mention chips, rather than raw bracket text.
-  s = s.replace(/&lt;@&amp;(\d+)&gt;/g, '<span class="md-mention">@role</span>');
-  s = s.replace(/&lt;@!?(\d+)&gt;/g, '<span class="md-mention">@user</span>');
-  s = s.replace(/&lt;#(\d+)&gt;/g, '<span class="md-mention">#channel</span>');
+  // Mentions and timestamps — Discord resolves these IDs using guild
+  // context. Use names collected from the pasted payload when available,
+  // then fall back to the same generic chips as before.
+  s = s.replace(/&lt;@&amp;(\d+)&gt;/g, (m, id) =>
+    `<span class="md-mention">@${escapeHTML(mentionLookup.roles[id] || 'role')}</span>`
+  );
+  s = s.replace(/&lt;@!?(\d+)&gt;/g, (m, id) =>
+    `<span class="md-mention">@${escapeHTML(mentionLookup.users[id] || 'user')}</span>`
+  );
+  s = s.replace(/&lt;#(\d+)&gt;/g, (m, id) =>
+    `<span class="md-mention">#${escapeHTML(mentionLookup.channels[id] || 'channel')}</span>`
+  );
   s = s.replace(/&lt;t:(-?\d+)(?::([tTdDfFR]))?&gt;/g, (m, unix, fmt) => {
     const text = formatDiscordTimestamp(parseInt(unix), fmt || 'f');
     return `<span class="md-timestamp">${escapeHTML(text)}</span>`;
@@ -573,8 +671,19 @@ function renderMarkdownCore(raw, blockLevel){
     s = s.replace(/^-# (.+)$/gm, '<span class="md-subtext">$1</span>');
     // Multi-line blockquote (>>>) consumes everything after it to the end
     // of the message — must run BEFORE the single-line (>) quote regex.
-    s = s.replace(/(^|\n)&gt;&gt;&gt; ([\s\S]*)$/, (m, prefix, content) => prefix + '<blockquote>' + content + '</blockquote>');
-    s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+    s = s.replace(/(^|\n)&gt;&gt;&gt; ?([\s\S]*)$/, (m, prefix, content) =>
+      prefix + stash('<blockquote>' + content.replace(/\n/g, '<br>') + '</blockquote>')
+    );
+
+    // Discord merges consecutive `> ...` lines into one blockquote with a
+    // single continuous bar. Building one <blockquote> per line caused the
+    // large gaps and split bars shown in the old preview.
+    s = s.replace(/(^|\n)((?:&gt;(?:[ \t].*)?(?:\n|$))+)/g, (m, prefix, quotedBlock) => {
+      const lines = quotedBlock.replace(/\n$/, '').split('\n').map(line =>
+        line.replace(/^&gt;(?:[ \t])?/, '')
+      );
+      return prefix + stash('<blockquote>' + lines.join('<br>') + '</blockquote>');
+    });
 
     // Bullet and numbered lists — Discord renders these with a real
     // bullet/number and a hanging indent.
@@ -588,11 +697,21 @@ function renderMarkdownCore(raw, blockLevel){
     });
   }
 
+  /* A block element already creates its own line box. Turning the source
+     newline beside it into <br> adds a fake blank line that Discord does not
+     render. Strip only those structural newlines and preserve ordinary text
+     line breaks. Placeholders cover stashed pre/list blocks too. */
+  s = s.replace(/(<\/?(?:h1|h2|h3|blockquote)>|\u0000\d+\u0000)\n/g, '$1');
+  s = s.replace(/\n(?=<\/?(?:h1|h2|h3|blockquote)>|\u0000\d+\u0000)/g, '');
   s = s.replace(/\n/g, '<br>');
 
   while(/\u0000\d+\u0000/.test(s)){
     s = s.replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[i]);
   }
+
+  /* Covers block HTML restored from a placeholder next to a generated <br>. */
+  s = s.replace(/<br>(?=<(?:h1|h2|h3|blockquote|pre|ul|ol)\b)/g, '');
+  s = s.replace(/<\/(h1|h2|h3|blockquote|pre|ul|ol)><br>/g, '</$1>');
   return s;
 }
 
@@ -1583,6 +1702,7 @@ function runAutoImport(){
   }
 
   try{
+    hydrateMentionLookup(parsed);
     if(isComponentsV2Payload(parsed)){
       cv2State = buildCV2StateFromPayload(parsed);
       activeContainerIdx = 0;
