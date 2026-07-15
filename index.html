@@ -247,7 +247,7 @@
     background: var(--dc-card-bg); border: 1px solid rgba(0,0,0,.15);
   }
   .dc-embed .dc-embed-accent{ width:4px; flex-shrink:0; background: var(--dc-blurple); }
-  .dc-embed .dc-embed-body{ padding:12px 16px; flex:1; min-width:0; display:flex; gap:16px; }
+  .dc-embed .dc-embed-body{ padding:12px 16px; flex:1; min-width:0; display:flex; align-items:flex-start; gap:16px; }
   .dc-embed .dc-embed-main{ flex:1; min-width:0; }
   .dc-embed .dc-embed-thumb{
     width:80px; height:80px; border-radius:4px; object-fit:cover; flex-shrink:0; background:#1e1f22;
@@ -259,9 +259,8 @@
   .dc-e-title{ color:#f2f3f5; font-size:15px; font-weight:600; margin-bottom:6px; line-height:1.3; }
   .dc-e-title a{ color:#00a8fc; text-decoration:none; }
   .dc-e-desc{ color: var(--dc-text); font-size:13.75px; line-height:1.4; white-space:pre-wrap; word-break:break-word; }
-  .dc-e-fields{ display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:10px; }
+  .dc-e-fields{ display:grid; gap:8px; margin-top:10px; }
   .dc-e-field{ min-width:0; }
-  .dc-e-field.full{ grid-column: 1 / -1; }
   .dc-e-field .fname{ color:#f2f3f5; font-size:13.75px; font-weight:600; margin-bottom:2px; }
   .dc-e-field .fval{ color: var(--dc-text); font-size:13.75px; line-height:1.4; white-space:pre-wrap; word-break:break-word; }
   .dc-e-image{ margin-top:10px; max-width:100%; border-radius:4px; display:block; }
@@ -1031,16 +1030,49 @@ function timeNowLabel(){
   return d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) + ' Today';
 }
 
+function buildOneField(f){
+  return `
+    <div class="dc-e-field">
+      <div class="fname md-rich">${renderMarkdown(f.name)||'\u200b'}</div>
+      <div class="fval md-rich">${renderMarkdown(f.value)}</div>
+    </div>
+  `;
+}
+
+/* Groups fields into rows the way Discord actually does: consecutive
+   INLINE fields share a row together (up to 3 per row, sized to however
+   many are actually in that run — 2 inline fields get a 2-column row, not
+   squeezed into a fixed 3-column grid with a phantom empty slot). A
+   non-inline field always starts its own full-width row and breaks any
+   run of inline fields it interrupts. */
+function buildFieldRowsHTML(fields){
+  if(!fields.length) return '';
+  const rows = [];
+  let run = [];
+  const flushRun = () => {
+    if(run.length){
+      rows.push(`<div class="dc-e-fields" style="grid-template-columns: repeat(${run.length}, 1fr);">${run.map(buildOneField).join('')}</div>`);
+      run = [];
+    }
+  };
+  for(const f of fields){
+    if(f.inline){
+      run.push(f);
+      if(run.length === 3) flushRun();
+    } else {
+      flushRun();
+      rows.push(`<div class="dc-e-fields" style="grid-template-columns: 1fr;">${buildOneField(f)}</div>`);
+    }
+  }
+  flushRun();
+  return rows.join('');
+}
+
 function renderClassicPreview(){
   const wrap = document.getElementById('preview-discord');
   let embedsHTML = classicState.embeds.map(e => {
     if(!(e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text)) return '';
-    const fieldsHTML = e.fields.map(f => `
-      <div class="dc-e-field ${f.inline?'':'full'}">
-        <div class="fname md-rich">${renderMarkdown(f.name)||'\u200b'}</div>
-        <div class="fval md-rich">${renderMarkdown(f.value)}</div>
-      </div>
-    `).join('');
+    const fieldsHTML = buildFieldRowsHTML(e.fields);
     const accentColor = e.color_enabled ? e.color : '#4e5058';
 
     return `
@@ -1051,7 +1083,7 @@ function renderClassicPreview(){
             ${e.author.name ? `<div class="dc-e-author">${e.author.icon_url?`<img src="${e.author.icon_url}" onerror="this.style.display='none'">`:''}<span>${escapeHTML(e.author.name)}</span></div>` : ''}
             ${e.title ? `<div class="dc-e-title">${e.url ? `<a href="${e.url}" target="_blank">${escapeHTML(e.title)}</a>` : escapeHTML(e.title)}</div>` : ''}
             ${e.description ? `<div class="dc-e-desc md-rich">${renderMarkdown(e.description)}</div>` : ''}
-            ${e.fields.length ? `<div class="dc-e-fields">${fieldsHTML}</div>` : ''}
+            ${fieldsHTML}
             ${e.image.url ? `<img class="dc-e-image" src="${e.image.url}" onerror="this.style.display='none'">` : ''}
             ${(e.footer.text || e.timestamp) ? `
               <div class="dc-e-footer">
