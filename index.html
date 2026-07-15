@@ -83,15 +83,15 @@
     outline: 2px solid var(--forge-brass); outline-offset:2px;
   }
 
-  .workspace{ flex:1; display:grid; grid-template-columns: 440px 1fr; min-height:0; }
+  .workspace{ flex:1; display:grid; grid-template-columns: 400px 420px 1fr; min-height:0; }
 
   .builder{
     background: var(--forge-panel);
     border-right:1px solid var(--forge-border);
     overflow-y:auto; padding:20px;
   }
-  .builder::-webkit-scrollbar, .preview-col::-webkit-scrollbar{ width:10px; }
-  .builder::-webkit-scrollbar-thumb, .preview-col::-webkit-scrollbar-thumb{
+  .builder::-webkit-scrollbar, .pane-col::-webkit-scrollbar{ width:10px; }
+  .builder::-webkit-scrollbar-thumb, .pane-col::-webkit-scrollbar-thumb{
     background: var(--forge-border); border-radius:6px;
   }
 
@@ -171,17 +171,16 @@
 
   .hint{ font-size:11.5px; color: var(--forge-text-dim); margin-top:6px; line-height:1.5; }
 
-  .preview-col{ display:flex; flex-direction:column; min-height:0; }
-  .preview-tabs{
-    display:flex; gap:4px; padding:12px 20px 0; background: var(--forge-bg); flex-shrink:0;
+  .pane-col{ display:flex; flex-direction:column; min-height:0; border-right:1px solid var(--forge-border); }
+  .pane-col:last-child{ border-right:none; }
+  .pane-header{
+    padding:12px 20px; background: var(--forge-bg); flex-shrink:0;
+    font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color: var(--forge-brass); border-bottom:1px solid var(--forge-border);
   }
-  .preview-tabs button{
-    padding:9px 18px; border:none; background:transparent; color:var(--forge-text-dim);
-    font-size:13px; font-weight:600; cursor:pointer; border-bottom:2px solid transparent;
-  }
-  .preview-tabs button.active{ color: var(--forge-text); border-bottom-color: var(--forge-brass); }
-
-  .preview-body{ flex:1; overflow-y:auto; min-height:0; }
+  .pane-body{ flex:1; overflow-y:auto; min-height:0; }
+  .pane-body::-webkit-scrollbar{ width:10px; }
+  .pane-body::-webkit-scrollbar-thumb{ background: var(--forge-border); border-radius:6px; }
 
   .discord-pane{
     background: var(--dc-chat-bg); min-height:100%; padding:24px 24px 60px;
@@ -313,9 +312,11 @@
   .import-status.err{ color: var(--forge-danger); }
   .import-status.idle{ color: var(--forge-text-dim); font-weight:500; }
 
-  @media (max-width: 880px){
-    .workspace{ grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-    .builder{ border-right:none; border-bottom:1px solid var(--forge-border); max-height:50vh; }
+  @media (max-width: 1200px){
+    .workspace{ grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+    .builder{ border-right:none; border-bottom:1px solid var(--forge-border); max-height:60vh; }
+    .pane-col{ border-right:none; border-bottom:1px solid var(--forge-border); min-height:400px; }
+    .pane-col:last-child{ border-bottom:none; }
   }
 </style>
 </head>
@@ -344,14 +345,10 @@
     <div class="builder" id="builder-classic"></div>
     <div class="builder" id="builder-cv2" style="display:none;"></div>
 
-    <div class="preview-col">
-      <div class="preview-tabs">
-        <button id="ptab-preview" class="active" onclick="setPreviewTab('preview')">Preview</button>
-        <button id="ptab-json" onclick="setPreviewTab('json')">JSON output</button>
-      </div>
-      <div class="preview-body">
-        <div class="discord-pane" id="preview-discord"></div>
-        <div class="json-pane" id="preview-json" style="display:none;">
+    <div class="pane-col">
+      <div class="pane-header">JSON output</div>
+      <div class="pane-body">
+        <div class="json-pane">
           <div class="json-actions">
             <button class="btn" onclick="copyJSON()">Copy JSON</button>
             <button class="btn" onclick="downloadJSON()">Download .json</button>
@@ -361,6 +358,13 @@
           <textarea id="json-output" spellcheck="false" oninput="onJSONTextareaInput()"></textarea>
           <p class="hint">Works with clean JSON (<code>{content, embed/embeds}</code> or <code>{flags:32768, components}</code>) or a raw dump copied straight out of the Discord client — both get normalized automatically into whatever your bot's <code>/embed</code> command accepts.</p>
         </div>
+      </div>
+    </div>
+
+    <div class="pane-col">
+      <div class="pane-header">Preview</div>
+      <div class="pane-body">
+        <div class="discord-pane" id="preview-discord"></div>
       </div>
     </div>
 
@@ -403,14 +407,6 @@ function setMode(m){
   document.getElementById('builder-classic').style.display = m==='classic' ? 'block':'none';
   document.getElementById('builder-cv2').style.display = m==='cv2' ? 'block':'none';
   renderAll();
-}
-
-function setPreviewTab(t){
-  document.getElementById('ptab-preview').classList.toggle('active', t==='preview');
-  document.getElementById('ptab-json').classList.toggle('active', t==='json');
-  document.getElementById('preview-discord').style.display = t==='preview' ? 'block':'none';
-  document.getElementById('preview-json').style.display = t==='json' ? 'block':'none';
-  if(t==='json') renderJSON();
 }
 
 /* =========================================================================
@@ -1534,7 +1530,7 @@ function resetAll(){
    ========================================================================= */
 function refreshPreview(){
   if(mode==='classic') renderClassicPreview(); else renderCV2Preview();
-  if(document.getElementById('preview-json').style.display !== 'none') renderJSON();
+  renderJSON();
 }
 
 function renderAll(){
