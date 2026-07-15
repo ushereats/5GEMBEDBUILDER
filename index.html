@@ -243,7 +243,7 @@
   .dc-content:empty{ display:none; }
 
   .dc-embed{
-    display:flex; max-width:520px; margin-top:4px; border-radius:4px; overflow:hidden;
+    display:flex; max-width:550px; margin-top:4px; border-radius:4px; overflow:hidden;
     background: var(--dc-card-bg); border: 1px solid rgba(0,0,0,.15);
   }
   .dc-embed .dc-embed-accent{ width:4px; flex-shrink:0; background: var(--dc-blurple); }
@@ -271,7 +271,7 @@
   .dc-e-empty{ color: var(--dc-text-muted); font-size:13px; font-style:italic; padding:20px; text-align:center; }
 
   .dc-container{
-    max-width:520px; margin-top:6px; border-radius:8px; overflow:hidden;
+    max-width:550px; margin-top:6px; border-radius:8px; overflow:hidden;
     background: var(--dc-card-bg); border-left: 4px solid var(--dc-blurple);
     padding:12px 14px; display:flex; flex-direction:column; gap:10px;
   }
@@ -336,8 +336,8 @@
   .md-rich h2{ font-size:1.125em; font-weight:700; margin:8px 0 4px; color:#f2f3f5; line-height:1.2; }
   .md-rich h3{ font-size:1em; font-weight:700; margin:6px 0 2px; color:#f2f3f5; line-height:1.2; }
   .md-rich .md-subtext{ color:#949ba4; font-size:.75em; }
-  .md-emoji{ height:1.375em; width:1.375em; vertical-align:-0.3em; object-fit:contain; }
-  .md-emoji.jumbo{ height:2.75em; width:2.75em; vertical-align:-0.6em; }
+  .md-emoji{ height:1.375em; width:auto; vertical-align:-0.3em; object-fit:contain; }
+  .md-emoji.jumbo{ height:2.75em; width:auto; vertical-align:-0.6em; }
   .md-mention{
     background: rgba(88,101,242,.3); color:#c9cdfb;
     padding: 0 2px; border-radius:3px; font-weight:500; cursor:default;
@@ -505,7 +505,7 @@ function ansiToHtml(text){
   return out;
 }
 
-function renderMarkdown(raw){
+function renderMarkdownCore(raw, blockLevel){
   if(!raw) return '';
   let s = escapeHTML(raw);
 
@@ -555,29 +555,38 @@ function renderMarkdown(raw){
   s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>');
   s = s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
   s = s.replace(/__(.+?)__/g, '<u>$1</u>');
+  s = s.replace(/(?<!_)_([^_\n]+)_(?!_)/g, '<i>$1</i>');
   s = s.replace(/~~(.+?)~~/g, '<s>$1</s>');
   s = s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<i>$1</i>');
-  s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  s = s.replace(/^-# (.+)$/gm, '<span class="md-subtext">$1</span>');
-  // Multi-line blockquote (>>>) consumes everything after it to the end of
-  // the message — must run BEFORE the single-line (>) quote regex below.
-  s = s.replace(/(^|\n)&gt;&gt;&gt; ([\s\S]*)$/, (m, prefix, content) => prefix + '<blockquote>' + content + '</blockquote>');
-  s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
 
-  // Bullet and numbered lists — Discord actually renders these with a real
-  // bullet/number and a hanging indent (previously not implemented at all;
-  // "- item" lines rendered as plain dash-prefixed text with no list
-  // styling whatsoever).
-  s = s.replace(/(?:^[ \t]*- .+$\n?)+/gm, (block) => {
-    const items = block.trimEnd().split('\n').map(line => line.replace(/^[ \t]*- /, ''));
-    return stash('<ul class="md-list">' + items.map(it => `<li>${it}</li>`).join('') + '</ul>');
-  });
-  s = s.replace(/(?:^[ \t]*\d+\. .+$\n?)+/gm, (block) => {
-    const items = block.trimEnd().split('\n').map(line => line.replace(/^[ \t]*\d+\. /, ''));
-    return stash('<ol class="md-list">' + items.map(it => `<li>${it}</li>`).join('') + '</ol>');
-  });
+  // Block-level constructs (headings, blockquotes, lists) only apply to
+  // full message/description/text-display content — NOT to field names,
+  // which Discord always treats as compact single-line text with inline
+  // formatting only. Applying list/heading rules to something like a
+  // field name of "01. Rule title" would wrongly strip the visible "01."
+  // and replace it with a generic list marker, which is exactly what
+  // happened before this split existed.
+  if(blockLevel){
+    s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    s = s.replace(/^-# (.+)$/gm, '<span class="md-subtext">$1</span>');
+    // Multi-line blockquote (>>>) consumes everything after it to the end
+    // of the message — must run BEFORE the single-line (>) quote regex.
+    s = s.replace(/(^|\n)&gt;&gt;&gt; ([\s\S]*)$/, (m, prefix, content) => prefix + '<blockquote>' + content + '</blockquote>');
+    s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+    // Bullet and numbered lists — Discord renders these with a real
+    // bullet/number and a hanging indent.
+    s = s.replace(/(?:^[ \t]*- .+$\n?)+/gm, (block) => {
+      const items = block.trimEnd().split('\n').map(line => line.replace(/^[ \t]*- /, ''));
+      return stash('<ul class="md-list">' + items.map(it => `<li>${it}</li>`).join('') + '</ul>');
+    });
+    s = s.replace(/(?:^[ \t]*\d+\. .+$\n?)+/gm, (block) => {
+      const items = block.trimEnd().split('\n').map(line => line.replace(/^[ \t]*\d+\. /, ''));
+      return stash('<ol class="md-list">' + items.map(it => `<li>${it}</li>`).join('') + '</ol>');
+    });
+  }
 
   s = s.replace(/\n/g, '<br>');
 
@@ -586,6 +595,9 @@ function renderMarkdown(raw){
   }
   return s;
 }
+
+function renderMarkdown(raw){ return renderMarkdownCore(raw, true); }
+function renderInlineMarkdown(raw){ return renderMarkdownCore(raw, false); }
 
 function formatDiscordTimestamp(unixSeconds, fmt){
   const d = new Date(unixSeconds * 1000);
@@ -1030,11 +1042,24 @@ function timeNowLabel(){
   return d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) + ' Today';
 }
 
+/* A field meant purely as a blank spacer (common Discord trick to force a
+   line break between rows) is usually built with a true zero-width space
+   ('\u200b') so it renders as nothing. If it was instead typed as a plain
+   dash/underscore/whitespace placeholder, Discord's real client would
+   still show that literal text — but since the clear INTENT is an
+   invisible spacer, this treats dash-only content the same way so it
+   doesn't leak through as visible stray dashes. */
+function isSpacerLikeText(text){
+  return !text || /^[\s\-–—_]*$/.test(text);
+}
+
 function buildOneField(f){
+  const nameOut = isSpacerLikeText(f.name) ? '\u200b' : renderInlineMarkdown(f.name);
+  const valueOut = isSpacerLikeText(f.value) ? '\u200b' : renderMarkdown(f.value);
   return `
     <div class="dc-e-field">
-      <div class="fname md-rich">${renderMarkdown(f.name)||'\u200b'}</div>
-      <div class="fval md-rich">${renderMarkdown(f.value)}</div>
+      <div class="fname md-rich">${nameOut}</div>
+      <div class="fval md-rich">${valueOut}</div>
     </div>
   `;
 }
