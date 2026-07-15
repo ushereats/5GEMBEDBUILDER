@@ -240,12 +240,6 @@
   }
   .dc-container.no-accent{ border-left-color: var(--dc-card-border); }
   .dc-textdisplay{ color: var(--dc-text); font-size:14.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
-  .dc-textdisplay h1{ font-size:20px; margin:2px 0; color:#f2f3f5; }
-  .dc-textdisplay h2{ font-size:17px; margin:2px 0; color:#f2f3f5; }
-  .dc-textdisplay h3{ font-size:15px; margin:2px 0; color:#f2f3f5; }
-  .dc-textdisplay code{ background:#1e1f22; padding:1px 5px; border-radius:4px; font-family: 'Courier New', monospace; font-size:.9em; }
-  .dc-textdisplay pre{ background:#1e1f22; padding:8px 10px; border-radius:6px; overflow-x:auto; font-family:'Courier New', monospace; font-size:12.5px; }
-  .dc-textdisplay blockquote{ margin:4px 0; padding-left:10px; border-left:3px solid #4e5058; color:#c0c2c6; }
   .dc-separator{ height:1px; background:#3f4147; margin:2px 0; }
   .dc-section{ display:flex; gap:12px; align-items:flex-start; }
   .dc-section .dc-textdisplay{ flex:1; }
@@ -264,8 +258,37 @@
   .dc-button.style-5{ background:#4e5058; text-decoration:underline; }
   .dc-select{
     width:100%; padding:9px 12px; border-radius:6px; background:#1e1f22; color:#949ba4;
-    font-size:13.5px; border:none;
+    font-size:13.5px; border:none; display:flex; align-items:center; gap:6px;
   }
+  .dc-select .sel-caret{ margin-left:auto; opacity:.6; }
+
+  /* --- Universal Discord-accurate markdown rendering (applies to classic
+     embed content/description/fields AND Components V2 text displays —
+     these must all look identical to how Discord itself renders them) --- */
+  .md-rich{ }
+  .md-rich blockquote{
+    margin: 2px 0; padding: 0 0 0 12px;
+    border-left: 4px solid #4e5058;
+    color: inherit;
+  }
+  .md-rich code{
+    background: rgba(46,48,53,.6); color:#f8f8f8;
+    padding: 0.2em 0.4em; border-radius:4px;
+    font-family: 'Consolas', 'Courier New', monospace; font-size:.85em;
+  }
+  .md-rich pre{
+    background:#2b2d31; border:1px solid #1e1f22;
+    padding:0.75em 0.85em; border-radius:5px; overflow-x:auto;
+    font-family:'Consolas', 'Courier New', monospace; font-size:13px; line-height:1.4;
+    margin: 4px 0;
+  }
+  .md-rich pre code{ background:none; padding:0; border-radius:0; font-size:1em; }
+  .md-rich h1{ font-size:1.375em; font-weight:700; margin:8px 0 4px; color:#f2f3f5; line-height:1.2; }
+  .md-rich h2{ font-size:1.125em; font-weight:700; margin:8px 0 4px; color:#f2f3f5; line-height:1.2; }
+  .md-rich h3{ font-size:1em; font-weight:700; margin:6px 0 2px; color:#f2f3f5; line-height:1.2; }
+  .md-rich .md-subtext{ color:#949ba4; font-size:.75em; }
+  .md-emoji{ height:1.375em; width:1.375em; vertical-align:-0.3em; object-fit:contain; }
+  .md-emoji.jumbo{ height:2.75em; width:2.75em; vertical-align:-0.6em; }
 
   .json-pane{ padding:20px; }
   .json-pane textarea{
@@ -288,6 +311,7 @@
 </style>
 </head>
 <body>
+
 <div class="shell">
 
   <div class="topbar">
@@ -434,6 +458,13 @@ function renderMarkdown(raw){
     return '\u0000'+(blocks.length-1)+'\u0000';
   });
 
+  // Custom Discord emoji <:name:id> / animated <a:name:id> — rendered as
+  // real images straight from Discord's public CDN (no auth needed).
+  s = s.replace(/&lt;(a?):(\w+):(\d+)&gt;/g, (m, animated, name, id) => {
+    const ext = animated === 'a' ? 'gif' : 'png';
+    return `<img class="md-emoji" src="https://cdn.discordapp.com/emojis/${id}.${ext}" alt=":${name}:" title=":${name}:">`;
+  });
+
   s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
   s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>');
   s = s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -443,7 +474,10 @@ function renderMarkdown(raw){
   s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  s = s.replace(/^-# (.+)$/gm, '<span style="color:#949ba4;font-size:12px;">$1</span>');
+  s = s.replace(/^-# (.+)$/gm, '<span class="md-subtext">$1</span>');
+  // Multi-line blockquote (>>>) consumes everything after it to the end of
+  // the message — must run BEFORE the single-line (>) quote regex below.
+  s = s.replace(/(^|\n)&gt;&gt;&gt; ([\s\S]*)$/, (m, prefix, content) => prefix + '<blockquote>' + content + '</blockquote>');
   s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#00a8fc;text-decoration:none;">$1</a>');
   s = s.replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener" style="color:#00a8fc;text-decoration:none;">$1</a>');
@@ -670,6 +704,7 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
             <option value="4" ${b.style==4?'selected':''}>Danger (visual only)</option>
           </select>
           <input type="text" style="margin-top:8px;" value="${escapeHTML(b.label)}" oninput="btn_upd(${i},${bi},'label',this.value)" placeholder="Button label">
+          <input type="text" style="margin-top:8px;" value="${escapeHTML(b.emoji||'')}" oninput="btn_upd(${i},${bi},'emoji',this.value)" placeholder="Emoji (😀 or <:name:1234567890>)">
           ${b.style==5 ? `<input type="url" style="margin-top:8px;" value="${escapeHTML(b.url)}" oninput="btn_upd(${i},${bi},'url',this.value)" placeholder="https://... (required for link buttons)">` : ''}
         </div>
       `).join('')}
@@ -710,6 +745,7 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
             <input type="text" value="${escapeHTML(o.label)}" oninput="selopt_upd(${i},${oi},'label',this.value)" placeholder="Option label">
             <input type="text" style="margin-top:8px;" value="${escapeHTML(o.value)}" oninput="selopt_upd(${i},${oi},'value',this.value)" placeholder="Option value (internal)">
             <input type="text" style="margin-top:8px;" value="${escapeHTML(o.description)}" oninput="selopt_upd(${i},${oi},'description',this.value)" placeholder="Description (optional)">
+            <input type="text" style="margin-top:8px;" value="${escapeHTML(o.emoji||'')}" oninput="selopt_upd(${i},${oi},'emoji',this.value)" placeholder="Emoji (😀 or <:name:1234567890>)">
           </div>
         `).join('')}
         ${ch.options.length<25 ? `<button class="add-btn" onclick="addSelectOption(${i})">+ Add option</button>` : ''}
@@ -757,7 +793,7 @@ function moveChild(i, dir){
 }
 function ch_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreview(); }
 function addButton(i){
-  cv2State.containers[activeContainerIdx].children[i].buttons.push({style:5, label:'', url:''});
+  cv2State.containers[activeContainerIdx].children[i].buttons.push({style:5, label:'', url:'', emoji:''});
   renderAll();
 }
 function removeButton(i, bi){ cv2State.containers[activeContainerIdx].children[i].buttons.splice(bi,1); renderAll(); }
@@ -769,11 +805,48 @@ function btn_upd(i, bi, key, val){
 function sel_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreview(); }
 function sel_updKind(i, val){ cv2State.containers[activeContainerIdx].children[i].kind = parseInt(val); renderAll(); }
 function addSelectOption(i){
-  cv2State.containers[activeContainerIdx].children[i].options.push({label:'', value:'', description:''});
+  cv2State.containers[activeContainerIdx].children[i].options.push({label:'', value:'', description:'', emoji:''});
   renderAll();
 }
 function removeSelectOption(i, oi){ cv2State.containers[activeContainerIdx].children[i].options.splice(oi,1); renderAll(); }
 function selopt_upd(i, oi, key, val){ cv2State.containers[activeContainerIdx].children[i].options[oi][key] = val; refreshPreview(); }
+
+/* Shorthand <-> Discord emoji-object conversion, used for buttons and
+   select options. Type either a raw unicode emoji (😀) or Discord's custom
+   emoji shorthand (<:name:123456789012345678> / <a:name:...> for animated)
+   into the same text field. */
+function shorthandToEmojiObj(str){
+  if(!str) return null;
+  const m = str.trim().match(/^<(a?):(\w+):(\d+)>$/);
+  if(m) return { name: m[2], id: m[3], animated: m[1] === 'a' };
+  return { name: str.trim() };
+}
+function emojiObjToShorthand(obj){
+  if(!obj || !obj.name) return '';
+  if(obj.id) return `<${obj.animated ? 'a' : ''}:${obj.name}:${obj.id}>`;
+  return obj.name;
+}
+/* Renders a raw Discord emoji OBJECT {name,id,animated} (as preserved
+   verbatim on 'raw' passthrough components) as an image or unicode text. */
+function emojiObjToHtml(obj){
+  if(!obj || !obj.name) return '';
+  if(obj.id){
+    const ext = obj.animated ? 'gif' : 'png';
+    return `<img class="md-emoji" src="https://cdn.discordapp.com/emojis/${obj.id}.${ext}" alt=":${obj.name}:" title=":${obj.name}:">`;
+  }
+  return escapeHTML(obj.name);
+}
+/* Renders an emoji shorthand string as either a real custom-emoji <img>
+   (via Discord's public CDN) or leaves unicode emoji as plain text. */
+function renderEmojiShorthand(str){
+  if(!str) return '';
+  const m = str.trim().match(/^<(a?):(\w+):(\d+)>$/);
+  if(m){
+    const ext = m[1] === 'a' ? 'gif' : 'png';
+    return `<img class="md-emoji" src="https://cdn.discordapp.com/emojis/${m[3]}.${ext}" alt=":${m[2]}:" title=":${m[2]}:">`;
+  }
+  return escapeHTML(str);
+}
 
 /* =========================================================================
    PREVIEW RENDERING (Discord-authentic)
@@ -789,8 +862,8 @@ function renderClassicPreview(){
     if(!(e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text)) return '';
     const fieldsHTML = e.fields.map(f => `
       <div class="dc-e-field ${f.inline?'':'full'}">
-        <div class="fname">${renderMarkdown(f.name)||'\u200b'}</div>
-        <div class="fval">${renderMarkdown(f.value)}</div>
+        <div class="fname md-rich">${renderMarkdown(f.name)||'\u200b'}</div>
+        <div class="fval md-rich">${renderMarkdown(f.value)}</div>
       </div>
     `).join('');
     const accentColor = e.color_enabled ? e.color : '#4e5058';
@@ -802,7 +875,7 @@ function renderClassicPreview(){
           <div class="dc-embed-main">
             ${e.author.name ? `<div class="dc-e-author">${e.author.icon_url?`<img src="${e.author.icon_url}" onerror="this.style.display='none'">`:''}<span>${escapeHTML(e.author.name)}</span></div>` : ''}
             ${e.title ? `<div class="dc-e-title">${e.url ? `<a href="${e.url}" target="_blank">${escapeHTML(e.title)}</a>` : escapeHTML(e.title)}</div>` : ''}
-            ${e.description ? `<div class="dc-e-desc">${renderMarkdown(e.description)}</div>` : ''}
+            ${e.description ? `<div class="dc-e-desc md-rich">${renderMarkdown(e.description)}</div>` : ''}
             ${e.fields.length ? `<div class="dc-e-fields">${fieldsHTML}</div>` : ''}
             ${e.image.url ? `<img class="dc-e-image" src="${e.image.url}" onerror="this.style.display='none'">` : ''}
             ${(e.footer.text || e.timestamp) ? `
@@ -826,7 +899,7 @@ function renderClassicPreview(){
           <span class="dc-bot-tag">BOT</span>
           <span class="dc-time">${timeNowLabel()}</span>
         </div>
-        <div class="dc-content">${renderMarkdown(classicState.content)}</div>
+        <div class="dc-content md-rich">${renderMarkdown(classicState.content)}</div>
         ${embedsHTML || (!classicState.content ? `<div class="dc-e-empty">Nothing to preview yet — fill in a field on the left.</div>` : '')}
       </div>
     </div>
@@ -837,8 +910,11 @@ function renderRawComponent(original){
   if(!original) return `<div class="hint">Preserved component (details unavailable).</div>`;
   if(original.type === 1){
     const items = (original.components || []).map(c => {
-      if(c.type === 2) return `<button class="dc-button style-${c.style||2}">${escapeHTML(c.label)||'Button'}</button>`;
-      if([3,5,6,7,8].includes(c.type)) return `<div class="dc-select">${escapeHTML(c.placeholder || 'Select menu')}</div>`;
+      if(c.type === 2){
+        const emojiHtml = c.emoji ? emojiObjToHtml(c.emoji) + ' ' : '';
+        return `<button class="dc-button style-${c.style||2}">${emojiHtml}${escapeHTML(c.label)||'Button'}</button>`;
+      }
+      if([3,5,6,7,8].includes(c.type)) return `<div class="dc-select"><span>${escapeHTML(c.placeholder || 'Select menu')}</span><span class="sel-caret">▾</span></div>`;
       return '';
     }).join('');
     return `<div class="dc-actionrow" style="align-items:stretch;">${items}</div>`;
@@ -851,11 +927,11 @@ function renderCV2Preview(){
 
   const containersHTML = cv2State.containers.map(c => {
     const childrenHTML = c.children.map(ch => {
-      if(ch.type==='text') return `<div class="dc-textdisplay">${renderMarkdown(ch.content)}</div>`;
+      if(ch.type==='text') return `<div class="dc-textdisplay md-rich">${renderMarkdown(ch.content)}</div>`;
       if(ch.type==='separator') return `<div class="dc-separator"></div>`;
       if(ch.type==='section') return `
         <div class="dc-section">
-          <div class="dc-textdisplay">${renderMarkdown(ch.content)}</div>
+          <div class="dc-textdisplay md-rich">${renderMarkdown(ch.content)}</div>
           ${ch.thumbnail_url ? `<img class="dc-section-thumb" src="${ch.thumbnail_url}" onerror="this.style.display='none'">` : ''}
         </div>`;
       if(ch.type==='gallery'){
@@ -865,10 +941,10 @@ function renderCV2Preview(){
       }
       if(ch.type==='actionrow'){
         if(!ch.buttons.length) return '';
-        return `<div class="dc-actionrow">${ch.buttons.map(b=>`<button class="dc-button style-${b.style}">${escapeHTML(b.label)||'Button'}</button>`).join('')}</div>`;
+        return `<div class="dc-actionrow">${ch.buttons.map(b=>`<button class="dc-button style-${b.style}">${b.emoji?renderEmojiShorthand(b.emoji)+' ':''}${escapeHTML(b.label)||'Button'}</button>`).join('')}</div>`;
       }
       if(ch.type==='select'){
-        return `<div class="dc-select">${escapeHTML(ch.placeholder) || SELECT_KIND_LABELS[ch.kind]}</div>`;
+        return `<div class="dc-select"><span>${escapeHTML(ch.placeholder) || SELECT_KIND_LABELS[ch.kind]}</span><span class="sel-caret">▾</span></div>`;
       }
       if(ch.type==='raw') return renderRawComponent(ch.original);
       return '';
@@ -942,6 +1018,8 @@ function buildCV2JSON(){
         return { type:1, components: ch.buttons.map(b=>{
           const btn = { type:2, style:b.style, label:b.label||'Button' };
           if(b.style===5) btn.url = b.url||'';
+          const emoji = shorthandToEmojiObj(b.emoji);
+          if(emoji) btn.emoji = emoji;
           return btn;
         })};
       }
@@ -951,10 +1029,15 @@ function buildCV2JSON(){
           placeholder: ch.placeholder || undefined,
           min_values: ch.min_values ?? 1, max_values: ch.max_values ?? 1
         };
-        if(ch.kind === 3) sel.options = ch.options.filter(o=>o.label||o.value).map(o=>({
-          label: o.label || o.value || 'Option', value: o.value || o.label || 'option',
-          description: o.description || undefined
-        }));
+        if(ch.kind === 3) sel.options = ch.options.filter(o=>o.label||o.value).map(o=>{
+          const opt = {
+            label: o.label || o.value || 'Option', value: o.value || o.label || 'option',
+            description: o.description || undefined
+          };
+          const emoji = shorthandToEmojiObj(o.emoji);
+          if(emoji) opt.emoji = emoji;
+          return opt;
+        });
         return { type:1, components:[sel] };
       }
       if(ch.type==='raw') return ch.original || null;
@@ -1057,6 +1140,7 @@ function cleanComponentNode(node){
   if(node.maxValues !== undefined) out.max_values = node.maxValues;
   if(node.max_values !== undefined) out.max_values = node.max_values;
   if(node.spoiler !== undefined) out.spoiler = node.spoiler;
+  if(node.emoji !== undefined) out.emoji = node.emoji;
   if(Array.isArray(node.options)){
     out.options = node.options.map(o => ({
       label: o.label, value: o.value, description: o.description, emoji: o.emoji, default: !!o.default
@@ -1154,13 +1238,16 @@ function parseCV2Child(raw){
         options: []
       };
       if(s.type === 3 && Array.isArray(s.options)){
-        child.options = s.options.map(o => ({ label:o.label??'', value:o.value??'', description:o.description??'' }));
+        child.options = s.options.map(o => ({
+          label:o.label??'', value:o.value??'', description:o.description??'',
+          emoji: emojiObjToShorthand(o.emoji)
+        }));
       }
       return child;
     }
     const allButtons = kids.length>0 && kids.every(k => k && k.type === 2);
     if(allButtons){
-      return { type:'actionrow', buttons: kids.map(b => ({ style: b.style ?? 5, label: b.label ?? '', url: b.url ?? '' })) };
+      return { type:'actionrow', buttons: kids.map(b => ({ style: b.style ?? 5, label: b.label ?? '', url: b.url ?? '', emoji: emojiObjToShorthand(b.emoji) })) };
     }
     return { type:'raw', original: cleanComponentNode(raw) };
   }
