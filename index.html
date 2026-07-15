@@ -284,6 +284,10 @@
   .dc-section-thumb{ width:64px; height:64px; border-radius:6px; object-fit:cover; flex-shrink:0; background:#1e1f22; }
   .dc-gallery{ display:grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap:6px; }
   .dc-gallery img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; background:#1e1f22; }
+  .dc-gallery-single{
+    display:block; width:100%; max-height:300px; object-fit:cover;
+    border-radius:6px; background:#1e1f22;
+  }
   .dc-actionrow{ display:flex; gap:8px; flex-wrap:wrap; }
   .dc-button{
     padding:7px 14px; border-radius:6px; font-size:13.5px; font-weight:500;
@@ -321,6 +325,14 @@
     margin: 4px 0;
   }
   .md-rich pre code{ background:none; padding:0; border-radius:0; font-size:1em; }
+  .md-rich ul.md-list, .md-rich ol.md-list{
+    margin: 2px 0; padding-left: 1.5em;
+  }
+  .md-rich ul.md-list{ list-style: disc; }
+  .md-rich ol.md-list{ list-style: decimal; }
+  .md-rich ul.md-list li, .md-rich ol.md-list li{
+    margin: 2px 0; padding-left: 0.15em;
+  }
   .md-rich h1{ font-size:1.375em; font-weight:700; margin:8px 0 4px; color:#f2f3f5; line-height:1.2; }
   .md-rich h2{ font-size:1.125em; font-weight:700; margin:8px 0 4px; color:#f2f3f5; line-height:1.2; }
   .md-rich h3{ font-size:1em; font-weight:700; margin:6px 0 2px; color:#f2f3f5; line-height:1.2; }
@@ -499,11 +511,27 @@ function renderMarkdown(raw){
   let s = escapeHTML(raw);
 
   const blocks = [];
+  const stash = (html) => { blocks.push(html); return '\u0000'+(blocks.length-1)+'\u0000'; };
+
   s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
     const inner = (lang === 'ansi') ? ansiToHtml(code) : code;
-    blocks.push('<pre>'+inner+'</pre>');
-    return '\u0000'+(blocks.length-1)+'\u0000';
+    return stash('<pre>'+inner+'</pre>');
   });
+
+  // Links — handled FIRST and stashed as placeholders immediately, so
+  // nothing later (especially the bare-autolink pass) can ever re-match
+  // text that's already inside a built <a> tag. That re-matching (an
+  // already-built href getting caught by the bare "<url>" autolink regex)
+  // was the exact cause of the doubled/broken <a> tags seen in practice.
+  const linkHtml = (label, url) => `<a href="${url}" target="_blank" rel="noopener" style="color:#00a8fc;text-decoration:none;">${label}</a>`;
+
+  // Masked link with Discord's suppress-embed wrapper: [text](<url>)
+  s = s.replace(/\[([^\]]+)\]\(&lt;([^&]+)&gt;\)/g, (m, label, url) => stash(linkHtml(label, url)));
+  // Masked link, plain: [text](url)
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => stash(linkHtml(label, url)));
+  // Standalone suppressed/auto link: <url> (only what's left, since masked
+  // links already consumed their own bracketed URLs into placeholders above)
+  s = s.replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, (m, url) => stash(linkHtml(url, url)));
 
   // Custom Discord emoji <:name:id> / animated <a:name:id> — rendered as
   // real images straight from Discord's public CDN (no auth needed).
@@ -538,11 +566,25 @@ function renderMarkdown(raw){
   // the message — must run BEFORE the single-line (>) quote regex below.
   s = s.replace(/(^|\n)&gt;&gt;&gt; ([\s\S]*)$/, (m, prefix, content) => prefix + '<blockquote>' + content + '</blockquote>');
   s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#00a8fc;text-decoration:none;">$1</a>');
-  s = s.replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener" style="color:#00a8fc;text-decoration:none;">$1</a>');
+
+  // Bullet and numbered lists — Discord actually renders these with a real
+  // bullet/number and a hanging indent (previously not implemented at all;
+  // "- item" lines rendered as plain dash-prefixed text with no list
+  // styling whatsoever).
+  s = s.replace(/(?:^[ \t]*- .+$\n?)+/gm, (block) => {
+    const items = block.trimEnd().split('\n').map(line => line.replace(/^[ \t]*- /, ''));
+    return stash('<ul class="md-list">' + items.map(it => `<li>${it}</li>`).join('') + '</ul>');
+  });
+  s = s.replace(/(?:^[ \t]*\d+\. .+$\n?)+/gm, (block) => {
+    const items = block.trimEnd().split('\n').map(line => line.replace(/^[ \t]*\d+\. /, ''));
+    return stash('<ol class="md-list">' + items.map(it => `<li>${it}</li>`).join('') + '</ol>');
+  });
+
   s = s.replace(/\n/g, '<br>');
 
-  s = s.replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[i]);
+  while(/\u0000\d+\u0000/.test(s)){
+    s = s.replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[i]);
+  }
   return s;
 }
 
@@ -1077,6 +1119,9 @@ function renderCV2Preview(){
       if(ch.type==='gallery'){
         const urls = (ch.urls_raw||'').split('\n').map(s=>s.trim()).filter(Boolean);
         if(!urls.length) return '';
+        if(urls.length === 1){
+          return `<img class="dc-gallery-single" src="${urls[0]}" onerror="this.style.display='none'">`;
+        }
         return `<div class="dc-gallery">${urls.map(u=>`<img src="${u}" onerror="this.style.display='none'">`).join('')}</div>`;
       }
       if(ch.type==='actionrow'){
