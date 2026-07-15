@@ -723,21 +723,28 @@ function renderMarkdownCore(raw, blockLevel){
     });
   }
 
-  /* A block element already creates its own line box. Turning the source
-     newline beside it into <br> adds a fake blank line that Discord does not
-     render. Strip only those structural newlines and preserve ordinary text
-     line breaks. Placeholders cover stashed pre/list blocks too. */
-  s = s.replace(/(<\/?(?:h1|h2|h3|blockquote)>|\u0000\d+\u0000)\n/g, '$1');
-  s = s.replace(/\n(?=<\/?(?:h1|h2|h3|blockquote)>|\u0000\d+\u0000)/g, '');
+  /* Headings use a zero-width end-of-line anchor, so their trailing
+     newline is never consumed by the heading regex itself — stripping it
+     here prevents a fake extra blank line directly after a heading, which
+     Discord's own client doesn't show (the heading's margin already
+     provides spacing). Blockquotes, lists, and code blocks are NOT
+     included here: their own regexes already consume their single
+     trailing structural newline as part of the match (verified directly),
+     so any newline still remaining after one of those blocks is a genuine
+     blank-line paragraph break the source intended — stripping it here
+     was the actual cause of separate blockquotes/lists collapsing
+     together with no visible gap between them. */
+  s = s.replace(/(<\/(?:h1|h2|h3)>)\n/g, '$1');
+  s = s.replace(/\n(?=<(?:h1|h2|h3)\b)/g, '');
   s = s.replace(/\n/g, '<br>');
 
   while(/\u0000\d+\u0000/.test(s)){
     s = s.replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[i]);
   }
 
-  /* Covers block HTML restored from a placeholder next to a generated <br>. */
-  s = s.replace(/<br>(?=<(?:h1|h2|h3|blockquote|pre|ul|ol)\b)/g, '');
-  s = s.replace(/<\/(h1|h2|h3|blockquote|pre|ul|ol)><br>/g, '</$1>');
+  /* Same heading-only scope for the post-restoration pass. */
+  s = s.replace(/<br>(?=<(?:h1|h2|h3)\b)/g, '');
+  s = s.replace(/<\/(h1|h2|h3)><br>/g, '</$1>');
   return s;
 }
 
@@ -1781,6 +1788,7 @@ function runAutoImport(){
 
   if(mode==='classic') renderClassicBuilder(); else renderCV2Builder();
   if(mode==='classic') renderClassicPreview(); else renderCV2Preview();
+  renderJSON();
 
   statusEl.textContent = '✓ Built — showing ' + (mode==='cv2' ? 'Components V2' : 'Classic Embed') + '. Check the Preview tab.';
   statusEl.className = 'import-status ok';
