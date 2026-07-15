@@ -6,7 +6,6 @@
 <title>Embed Forge — Discord Embed &amp; Component Builder</title>
 <style>
   :root{
-    /* --- Builder chrome (this tool's own identity) --- */
     --forge-bg: #14151c;
     --forge-panel: #1b1d27;
     --forge-panel-raised: #20222e;
@@ -18,7 +17,6 @@
     --forge-danger: #e0575b;
     --forge-ok: #4dae72;
 
-    /* --- Authentic Discord dark theme (preview pane must match reality) --- */
     --dc-chat-bg: #313338;
     --dc-card-bg: #2b2d31;
     --dc-card-border: #1e1f22;
@@ -39,7 +37,6 @@
 
   ::selection{ background: var(--forge-brass); color:#14151c; }
 
-  /* ---------- layout shell ---------- */
   .shell{ display:flex; flex-direction:column; height:100vh; }
 
   .topbar{
@@ -86,7 +83,6 @@
 
   .workspace{ flex:1; display:grid; grid-template-columns: 440px 1fr; min-height:0; }
 
-  /* ---------- left: builder ---------- */
   .builder{
     background: var(--forge-panel);
     border-right:1px solid var(--forge-border);
@@ -121,6 +117,7 @@
   }
   textarea{ min-height:64px; line-height:1.45; }
   input::placeholder, textarea::placeholder{ color:#565968; }
+  input:disabled{ opacity:.4; cursor:not-allowed; }
 
   .row{ display:flex; gap:10px; }
   .row > *{ flex:1; min-width:0; }
@@ -130,6 +127,10 @@
     width:38px; height:34px; padding:2px; border-radius:6px; border:1px solid var(--forge-border);
     background:#14151c; cursor:pointer; flex-shrink:0;
   }
+
+  .toggle-row{ display:flex; align-items:center; gap:8px; margin:10px 0; }
+  .toggle-row input{ width:15px; height:15px; accent-color: var(--forge-brass); cursor:pointer; }
+  .toggle-row label{ font-size:12.5px; color: var(--forge-text); cursor:pointer; }
 
   .checkbox-row{ display:flex; align-items:center; gap:8px; margin-top:12px; }
   .checkbox-row input{ width:15px; height:15px; accent-color: var(--forge-brass); }
@@ -168,7 +169,6 @@
 
   .hint{ font-size:11.5px; color: var(--forge-text-dim); margin-top:6px; line-height:1.5; }
 
-  /* ---------- right: preview + json ---------- */
   .preview-col{ display:flex; flex-direction:column; min-height:0; }
   .preview-tabs{
     display:flex; gap:4px; padding:12px 20px 0; background: var(--forge-bg); flex-shrink:0;
@@ -181,7 +181,6 @@
 
   .preview-body{ flex:1; overflow-y:auto; min-height:0; }
 
-  /* --- Discord chat mock (must look real) --- */
   .discord-pane{
     background: var(--dc-chat-bg); min-height:100%; padding:24px 24px 60px;
   }
@@ -232,12 +231,12 @@
 
   .dc-e-empty{ color: var(--dc-text-muted); font-size:13px; font-style:italic; padding:20px; text-align:center; }
 
-  /* CV2 mock */
   .dc-container{
     max-width:520px; margin-top:6px; border-radius:8px; overflow:hidden;
     background: var(--dc-card-bg); border-left: 4px solid var(--dc-blurple);
     padding:12px 14px; display:flex; flex-direction:column; gap:10px;
   }
+  .dc-container.no-accent{ border-left-color: var(--dc-card-border); }
   .dc-textdisplay{ color: var(--dc-text); font-size:14.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
   .dc-textdisplay h1{ font-size:20px; margin:2px 0; color:#f2f3f5; }
   .dc-textdisplay h2{ font-size:17px; margin:2px 0; color:#f2f3f5; }
@@ -266,7 +265,6 @@
     font-size:13.5px; border:none;
   }
 
-  /* JSON tab */
   .json-pane{ padding:20px; }
   .json-pane textarea{
     width:100%; min-height:520px; background:#0d0e13; color:#b8e6a8;
@@ -276,14 +274,10 @@
   .json-actions{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
   .copy-flash{ color: var(--forge-ok); font-size:12.5px; margin-left:8px; opacity:0; transition:opacity .2s; align-self:center; }
   .copy-flash.show{ opacity:1; }
-  .import-status{ font-size:12.5px; font-weight:600; margin-bottom:10px; min-height:0; }
+  .import-status{ font-size:12.5px; font-weight:600; margin-bottom:10px; min-height:16px; }
   .import-status.ok{ color: var(--forge-ok); }
   .import-status.err{ color: var(--forge-danger); }
-  .raw-note{
-    background:#1b1408; border:1px solid #4a3a18; border-radius:6px; padding:10px 12px;
-    font-size:12px; color:#d9a54a; line-height:1.5;
-  }
-  .raw-note code{ background:#14151c; padding:1px 5px; border-radius:4px; }
+  .import-status.idle{ color: var(--forge-text-dim); font-weight:500; }
 
   @media (max-width: 880px){
     .workspace{ grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -312,15 +306,9 @@
 
   <div class="workspace">
 
-    <!-- ===================== BUILDER (left) ===================== -->
-    <div class="builder" id="builder-classic">
-      <!-- populated by renderClassicBuilder() -->
-    </div>
-    <div class="builder" id="builder-cv2" style="display:none;">
-      <!-- populated by renderCV2Builder() -->
-    </div>
+    <div class="builder" id="builder-classic"></div>
+    <div class="builder" id="builder-cv2" style="display:none;"></div>
 
-    <!-- ===================== PREVIEW (right) ===================== -->
     <div class="preview-col">
       <div class="preview-tabs">
         <button id="ptab-preview" class="active" onclick="setPreviewTab('preview')">Preview</button>
@@ -330,14 +318,13 @@
         <div class="discord-pane" id="preview-discord"></div>
         <div class="json-pane" id="preview-json" style="display:none;">
           <div class="json-actions">
-            <button class="btn primary" onclick="importFromJSON()">⤵ Build from this JSON</button>
             <button class="btn" onclick="copyJSON()">Copy JSON</button>
             <button class="btn" onclick="downloadJSON()">Download .json</button>
             <span class="copy-flash" id="copy-flash">Copied!</span>
           </div>
-          <div id="import-status" class="import-status"></div>
-          <textarea id="json-output" spellcheck="false"></textarea>
-          <p class="hint">Paste any JSON here — clean <code>{content, embed/embeds}</code> or <code>{flags:32768, components}</code>, OR a raw dump copied straight out of the Discord client (camelCase keys, <code>accentColor</code> as an hsla() string, <code>rawTitle</code>/<code>rawDescription</code>, etc.) — then click <b>Build from this JSON</b> to load it into the builder and preview above. It also re-normalizes into clean JSON automatically once imported, matching what your bot's <code>/embed</code> command accepts.</p>
+          <div id="import-status" class="import-status idle">Edit or paste JSON below — it builds and previews automatically as you type (after a short pause).</div>
+          <textarea id="json-output" spellcheck="false" oninput="onJSONTextareaInput()"></textarea>
+          <p class="hint">Works with clean JSON (<code>{content, embed/embeds}</code> or <code>{flags:32768, components}</code>) or a raw dump copied straight out of the Discord client — both get normalized automatically into whatever your bot's <code>/embed</code> command accepts.</p>
         </div>
       </div>
     </div>
@@ -349,11 +336,11 @@
 /* =========================================================================
    STATE
    ========================================================================= */
-let mode = 'classic'; // 'classic' | 'cv2'
+let mode = 'classic';
 
 function newEmbed(){
   return {
-    title:'', description:'', url:'', color:'#5865f2', timestamp:false,
+    title:'', description:'', url:'', color:'#5865f2', color_enabled:true, timestamp:false,
     author:{name:'', url:'', icon_url:''},
     thumbnail:{url:''}, image:{url:''},
     footer:{text:'', icon_url:''},
@@ -365,10 +352,11 @@ function newField(){ return { name:'', value:'', inline:false }; }
 let classicState = { content:'', embeds:[ newEmbed() ] };
 let activeEmbedIdx = 0;
 
-/* CV2 tree: containers[] -> children[] of {type:'text'|'separator'|'section'|'gallery'|'actionrow', ...} */
-function newContainer(){ return { accent_color:'#5865f2', children:[] }; }
+function newContainer(){ return { accent_color:'#5865f2', color_enabled:true, children:[] }; }
 let cv2State = { containers:[ newContainer() ] };
 let activeContainerIdx = 0;
+
+const SELECT_KIND_LABELS = { 3:'String select', 5:'User select', 6:'Role select', 7:'Mentionable select', 8:'Channel select' };
 
 /* =========================================================================
    MODE / TAB SWITCHING
@@ -391,20 +379,56 @@ function setPreviewTab(t){
 }
 
 /* =========================================================================
-   SAFE TEXT / LIGHTWEIGHT MARKDOWN
+   SAFE TEXT / LIGHTWEIGHT MARKDOWN (with real ANSI code block support)
    ========================================================================= */
 function escapeHTML(s){
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const ANSI_FG = {30:'#4f545c',31:'#dc322f',32:'#859900',33:'#b58900',34:'#268bd2',35:'#d33682',36:'#2aa198',37:'#ffffff'};
+const ANSI_BG = {40:'#002b36',41:'#cb4b16',42:'#586e75',43:'#657b83',44:'#839496',45:'#6c71c4',46:'#93a1a1',47:'#fdf6e3'};
+
+/* `text` here is assumed ALREADY html-escaped (caller passes escaped input) —
+   this only interprets ESC[...m sequences and wraps the literal text
+   segments in styled spans, it never touches the text's own escaping. */
+function ansiToHtml(text){
+  const ESC = '\u001b';
+  const parts = text.split(new RegExp('\\' + ESC + '\\[([\\d;]*)m'));
+  let out = '';
+  let fg=null, bg=null, bold=false, underline=false;
+  for(let idx=0; idx<parts.length; idx++){
+    if(idx % 2 === 0){
+      const seg = parts[idx];
+      if(!seg) continue;
+      const styles = [];
+      if(fg) styles.push('color:'+fg);
+      if(bg) styles.push('background:'+bg+';padding:0 2px;border-radius:2px');
+      if(bold) styles.push('font-weight:700');
+      if(underline) styles.push('text-decoration:underline');
+      out += styles.length ? '<span style="'+styles.join(';')+'">'+seg+'</span>' : seg;
+    } else {
+      const codes = parts[idx].split(';').filter(Boolean).map(Number);
+      if(codes.length===0){ fg=null; bg=null; bold=false; underline=false; }
+      for(const c of codes){
+        if(c===0){ fg=null; bg=null; bold=false; underline=false; }
+        else if(c===1) bold=true;
+        else if(c===4) underline=true;
+        else if(ANSI_FG[c]!==undefined) fg=ANSI_FG[c];
+        else if(ANSI_BG[c]!==undefined) bg=ANSI_BG[c];
+      }
+    }
+  }
+  return out;
 }
 
 function renderMarkdown(raw){
   if(!raw) return '';
   let s = escapeHTML(raw);
 
-  // fenced code blocks first (protect content from further processing)
   const blocks = [];
-  s = s.replace(/```([\s\S]*?)```/g, (m, code) => {
-    blocks.push('<pre>'+code.replace(/^\w*\n/, '')+'</pre>');
+  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
+    const inner = (lang === 'ansi') ? ansiToHtml(code) : code;
+    blocks.push('<pre>'+inner+'</pre>');
     return '\u0000'+(blocks.length-1)+'\u0000';
   });
 
@@ -447,7 +471,7 @@ function renderClassicBuilder(){
     <div class="section-block">
       <div class="section-title">Message content</div>
       <label class="field-label">Text above the embed (optional)</label>
-      <textarea oninput="classicState.content=this.value; renderAll()" placeholder="Plain message text...">${escapeHTML(classicState.content)}</textarea>
+      <textarea oninput="classicState.content=this.value; refreshPreview()" placeholder="Plain message text...">${escapeHTML(classicState.content)}</textarea>
     </div>
 
     <div class="embed-tabs">${tabs}</div>
@@ -465,12 +489,15 @@ function renderClassicBuilder(){
       <input type="url" value="${escapeHTML(e.url)}" oninput="e_upd('url', this.value)" placeholder="https://...">
 
       <label class="field-label">Description</label>
-      <textarea oninput="e_upd('description', this.value)" placeholder="Supports **bold**, *italic*, __underline__, ~~strike~~, \`code\`, > quotes, [links](url)">${escapeHTML(e.description)}</textarea>
+      <textarea oninput="e_upd('description', this.value)" placeholder="Supports **bold**, *italic*, __underline__, ~~strike~~, code, quotes, links">${escapeHTML(e.description)}</textarea>
 
-      <label class="field-label">Color</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="color-enabled" ${e.color_enabled?'checked':''} onchange="e_toggleColor(this.checked)">
+        <label for="color-enabled">Use a custom color (off = Discord's default gray edge)</label>
+      </div>
       <div class="color-row">
-        <input type="color" value="${e.color}" oninput="e_upd('color', this.value)">
-        <input type="text" value="${e.color}" oninput="e_upd('color', this.value)" style="flex:1">
+        <input type="color" value="${e.color}" oninput="e_upd('color', this.value)" ${e.color_enabled?'':'disabled'}>
+        <input type="text" value="${e.color}" oninput="e_upd('color', this.value)" style="flex:1" ${e.color_enabled?'':'disabled'}>
       </div>
 
       <label class="field-label">Author name</label>
@@ -526,9 +553,10 @@ function renderClassicBuilder(){
   `;
 }
 
-function e_upd(key, val){ classicState.embeds[activeEmbedIdx][key] = val; renderAll(); }
-function e_updNested(group, key, val){ classicState.embeds[activeEmbedIdx][group][key] = val; renderAll(); }
-function f_upd(i, key, val){ classicState.embeds[activeEmbedIdx].fields[i][key] = val; renderAll(); }
+function e_upd(key, val){ classicState.embeds[activeEmbedIdx][key] = val; refreshPreview(); }
+function e_updNested(group, key, val){ classicState.embeds[activeEmbedIdx][group][key] = val; refreshPreview(); }
+function e_toggleColor(enabled){ classicState.embeds[activeEmbedIdx].color_enabled = enabled; renderAll(); }
+function f_upd(i, key, val){ classicState.embeds[activeEmbedIdx].fields[i][key] = val; refreshPreview(); }
 function addField(){ classicState.embeds[activeEmbedIdx].fields.push(newField()); renderAll(); }
 function removeField(i){ classicState.embeds[activeEmbedIdx].fields.splice(i,1); renderAll(); }
 function addEmbed(){ classicState.embeds.push(newEmbed()); activeEmbedIdx = classicState.embeds.length-1; renderAll(); }
@@ -558,12 +586,15 @@ function renderCV2Builder(){
         <span>Container ${activeContainerIdx+1}</span>
         ${cv2State.containers.length>1 ? `<button class="icon-btn" onclick="removeContainer(${activeContainerIdx})">✕</button>` : ''}
       </div>
-      <label class="field-label">Accent color (the left border)</label>
-      <div class="color-row">
-        <input type="color" value="${c.accent_color}" oninput="c_upd('accent_color', this.value)">
-        <input type="text" value="${c.accent_color}" oninput="c_upd('accent_color', this.value)" style="flex:1">
+      <div class="toggle-row">
+        <input type="checkbox" id="c-color-enabled" ${c.color_enabled?'checked':''} onchange="c_toggleColor(this.checked)">
+        <label for="c-color-enabled">Use a custom accent color (off = no colored edge, fully removable in Components V2)</label>
       </div>
-      <p class="hint">A Container holds up to 10 children total. Add TextDisplay, Separator, Section, Media Gallery, or a row of Buttons below.</p>
+      <div class="color-row">
+        <input type="color" value="${c.accent_color}" oninput="c_upd('accent_color', this.value)" ${c.color_enabled?'':'disabled'}>
+        <input type="text" value="${c.accent_color}" oninput="c_upd('accent_color', this.value)" style="flex:1" ${c.color_enabled?'':'disabled'}>
+      </div>
+      <p class="hint">A Container holds up to 10 children total.</p>
     </div>
 
     <div class="section-block">
@@ -577,6 +608,7 @@ function renderCV2Builder(){
           <button class="btn" style="flex:none;" onclick="addChild('section')">+ Section</button>
           <button class="btn" style="flex:none;" onclick="addChild('gallery')">+ Gallery</button>
           <button class="btn" style="flex:none;" onclick="addChild('actionrow')">+ Buttons</button>
+          <button class="btn" style="flex:none;" onclick="addChild('select')">+ Select menu</button>
         </div>
       ` : ''}
     </div>
@@ -598,7 +630,7 @@ function renderChildEditor(ch, i){
 
   if(ch.type==='text'){
     return `<div class="subcard">${head('Text Display')}
-      <textarea oninput="ch_upd(${i},'content',this.value)" placeholder="# Heading, **bold**, \`code\`, \`\`\`code block\`\`\`, > quote...">${escapeHTML(ch.content)}</textarea>
+      <textarea oninput="ch_upd(${i},'content',this.value)" placeholder="# Heading, **bold**, code, quote...">${escapeHTML(ch.content)}</textarea>
     </div>`;
   }
   if(ch.type==='separator'){
@@ -640,18 +672,60 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
         </div>
       `).join('')}
       ${ch.buttons.length<5 ? `<button class="add-btn" onclick="addButton(${i})">+ Add button</button>` : ''}
-      <p class="hint">Only link buttons actually do anything when clicked — the rest render for layout/preview purposes only, same as your bot's JSON importer.</p>
+      <p class="hint">Only link buttons actually do anything when clicked — the rest render for layout/preview purposes only.</p>
+    </div>`;
+  }
+  if(ch.type==='select'){
+    const kindOptions = Object.entries(SELECT_KIND_LABELS).map(([val,label]) =>
+      `<option value="${val}" ${ch.kind==+val?'selected':''}>${label}</option>`
+    ).join('');
+    return `<div class="subcard">${head('Select menu')}
+      <label class="field-label" style="margin-top:0;">Kind</label>
+      <select onchange="sel_updKind(${i}, this.value)">${kindOptions}</select>
+
+      <label class="field-label">Placeholder text</label>
+      <input type="text" value="${escapeHTML(ch.placeholder)}" oninput="sel_upd(${i},'placeholder',this.value)" placeholder="Choose an option...">
+
+      <div class="row" style="margin-top:8px;">
+        <div>
+          <label class="field-label" style="margin-top:0;">Min values</label>
+          <input type="number" min="0" max="25" value="${ch.min_values}" oninput="sel_upd(${i},'min_values',parseInt(this.value)||0)">
+        </div>
+        <div>
+          <label class="field-label" style="margin-top:0;">Max values</label>
+          <input type="number" min="1" max="25" value="${ch.max_values}" oninput="sel_upd(${i},'max_values',parseInt(this.value)||1)">
+        </div>
+      </div>
+
+      ${ch.kind==3 ? `
+        <div class="section-title" style="margin-top:14px;">Options <span style="color:var(--forge-text-dim); font-weight:600;">${ch.options.length}/25</span></div>
+        ${ch.options.map((o,oi)=>`
+          <div class="subcard" style="background:#1b1d27;">
+            <div class="subcard-head">
+              <span class="idx">Option ${oi+1}</span>
+              <button class="icon-btn" onclick="removeSelectOption(${i},${oi})">✕</button>
+            </div>
+            <input type="text" value="${escapeHTML(o.label)}" oninput="selopt_upd(${i},${oi},'label',this.value)" placeholder="Option label">
+            <input type="text" style="margin-top:8px;" value="${escapeHTML(o.value)}" oninput="selopt_upd(${i},${oi},'value',this.value)" placeholder="Option value (internal)">
+            <input type="text" style="margin-top:8px;" value="${escapeHTML(o.description)}" oninput="selopt_upd(${i},${oi},'description',this.value)" placeholder="Description (optional)">
+          </div>
+        `).join('')}
+        ${ch.options.length<25 ? `<button class="add-btn" onclick="addSelectOption(${i})">+ Add option</button>` : ''}
+      ` : `<p class="hint">${SELECT_KIND_LABELS[ch.kind]} pulls its choices live from Discord — no options list needed here.</p>`}
+
+      <p class="hint">Rendered for layout/preview — selecting an option needs real bot code behind it, same as your Discord bot's JSON importer.</p>
     </div>`;
   }
   if(ch.type==='raw'){
     return `<div class="subcard">${head('Imported component (type ' + (ch.original?.type ?? '?') + ')')}
-      <div class="raw-note">This component (e.g. a select menu row, or something this builder has no dedicated editor for) was imported as-is. It still renders in the preview and exports correctly — just not editable field-by-field here. Use <code>Build from this JSON</code> again after hand-editing the JSON output tab if you need to change it.</div>
+      <p class="hint" style="margin-top:0;">This component type has no dedicated editor here. It still renders in the preview and exports correctly, unedited.</p>
     </div>`;
   }
   return '';
 }
 
-function c_upd(key, val){ cv2State.containers[activeContainerIdx][key] = val; renderAll(); }
+function c_upd(key, val){ cv2State.containers[activeContainerIdx][key] = val; refreshPreview(); }
+function c_toggleColor(enabled){ cv2State.containers[activeContainerIdx].color_enabled = enabled; renderAll(); }
 function addContainer(){ cv2State.containers.push(newContainer()); activeContainerIdx = cv2State.containers.length-1; renderAll(); }
 function removeContainer(i){
   cv2State.containers.splice(i,1);
@@ -667,6 +741,7 @@ function addChild(type){
   if(type==='section'){ child.content=''; child.thumbnail_url=''; }
   if(type==='gallery') child.urls_raw = '';
   if(type==='actionrow') child.buttons = [];
+  if(type==='select') Object.assign(child, { kind:3, placeholder:'', min_values:1, max_values:1, options:[] });
   c.children.push(child);
   renderAll();
 }
@@ -678,7 +753,7 @@ function moveChild(i, dir){
   [arr[i], arr[j]] = [arr[j], arr[i]];
   renderAll();
 }
-function ch_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; renderAll(); }
+function ch_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreview(); }
 function addButton(i){
   cv2State.containers[activeContainerIdx].children[i].buttons.push({style:5, label:'', url:''});
   renderAll();
@@ -686,8 +761,17 @@ function addButton(i){
 function removeButton(i, bi){ cv2State.containers[activeContainerIdx].children[i].buttons.splice(bi,1); renderAll(); }
 function btn_upd(i, bi, key, val){
   cv2State.containers[activeContainerIdx].children[i].buttons[bi][key] = (key==='style'? parseInt(val) : val);
+  if(key==='style') renderAll(); else refreshPreview();
+}
+
+function sel_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreview(); }
+function sel_updKind(i, val){ cv2State.containers[activeContainerIdx].children[i].kind = parseInt(val); renderAll(); }
+function addSelectOption(i){
+  cv2State.containers[activeContainerIdx].children[i].options.push({label:'', value:'', description:''});
   renderAll();
 }
+function removeSelectOption(i, oi){ cv2State.containers[activeContainerIdx].children[i].options.splice(oi,1); renderAll(); }
+function selopt_upd(i, oi, key, val){ cv2State.containers[activeContainerIdx].children[i].options[oi][key] = val; refreshPreview(); }
 
 /* =========================================================================
    PREVIEW RENDERING (Discord-authentic)
@@ -699,8 +783,6 @@ function timeNowLabel(){
 
 function renderClassicPreview(){
   const wrap = document.getElementById('preview-discord');
-  const hasAnyEmbed = classicState.embeds.some(e => e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text);
-
   let embedsHTML = classicState.embeds.map(e => {
     if(!(e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text)) return '';
     const fieldsHTML = e.fields.map(f => `
@@ -709,10 +791,11 @@ function renderClassicPreview(){
         <div class="fval">${renderMarkdown(f.value)}</div>
       </div>
     `).join('');
+    const accentColor = e.color_enabled ? e.color : '#4e5058';
 
     return `
       <div class="dc-embed">
-        <div class="dc-embed-accent" style="background:${e.color}"></div>
+        <div class="dc-embed-accent" style="background:${accentColor}"></div>
         <div class="dc-embed-body">
           <div class="dc-embed-main">
             ${e.author.name ? `<div class="dc-e-author">${e.author.icon_url?`<img src="${e.author.icon_url}" onerror="this.style.display='none'">`:''}<span>${escapeHTML(e.author.name)}</span></div>` : ''}
@@ -748,6 +831,19 @@ function renderClassicPreview(){
   `;
 }
 
+function renderRawComponent(original){
+  if(!original) return `<div class="hint">Preserved component (details unavailable).</div>`;
+  if(original.type === 1){
+    const items = (original.components || []).map(c => {
+      if(c.type === 2) return `<button class="dc-button style-${c.style||2}">${escapeHTML(c.label)||'Button'}</button>`;
+      if([3,5,6,7,8].includes(c.type)) return `<div class="dc-select">${escapeHTML(c.placeholder || 'Select menu')}</div>`;
+      return '';
+    }).join('');
+    return `<div class="dc-actionrow" style="align-items:stretch;">${items}</div>`;
+  }
+  return `<div class="hint">Preserved component (type ${original.type}) — no preview available for this type.</div>`;
+}
+
 function renderCV2Preview(){
   const wrap = document.getElementById('preview-discord');
 
@@ -769,12 +865,16 @@ function renderCV2Preview(){
         if(!ch.buttons.length) return '';
         return `<div class="dc-actionrow">${ch.buttons.map(b=>`<button class="dc-button style-${b.style}">${escapeHTML(b.label)||'Button'}</button>`).join('')}</div>`;
       }
+      if(ch.type==='select'){
+        return `<div class="dc-select">${escapeHTML(ch.placeholder) || SELECT_KIND_LABELS[ch.kind]}</div>`;
+      }
       if(ch.type==='raw') return renderRawComponent(ch.original);
       return '';
     }).join('');
 
     if(!childrenHTML.trim()) return '';
-    return `<div class="dc-container" style="border-left-color:${c.accent_color}">${childrenHTML}</div>`;
+    const borderColor = c.color_enabled ? c.accent_color : null;
+    return `<div class="dc-container ${borderColor?'':'no-accent'}" style="${borderColor?`border-left-color:${borderColor}`:''}">${childrenHTML}</div>`;
   }).join('');
 
   wrap.innerHTML = `
@@ -795,11 +895,112 @@ function renderCV2Preview(){
 /* =========================================================================
    JSON GENERATION
    ========================================================================= */
+function buildClassicJSON(){
+  const payload = {};
+  if(classicState.content) payload.content = classicState.content;
+
+  const embeds = classicState.embeds
+    .filter(e => e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text||e.url)
+    .map(e => {
+      const d = {};
+      if(e.title) d.title = e.title;
+      if(e.description) d.description = e.description;
+      if(e.url) d.url = e.url;
+      if(e.color_enabled) d.color = hexToInt(e.color);
+      if(e.timestamp) d.timestamp = new Date().toISOString();
+      if(e.author.name) d.author = Object.fromEntries(Object.entries(e.author).filter(([,v])=>v));
+      if(e.thumbnail.url) d.thumbnail = { url: e.thumbnail.url };
+      if(e.image.url) d.image = { url: e.image.url };
+      if(e.footer.text) d.footer = Object.fromEntries(Object.entries(e.footer).filter(([,v])=>v));
+      if(e.fields.length) d.fields = e.fields.filter(f=>f.name||f.value).map(f=>({name:f.name||'\u200b', value:f.value||'\u200b', inline:!!f.inline}));
+      return d;
+    });
+
+  if(embeds.length === 1) payload.embed = embeds[0];
+  else if(embeds.length > 1) payload.embeds = embeds;
+
+  return payload;
+}
+
+function buildCV2JSON(){
+  const components = cv2State.containers.map(c => {
+    const kids = c.children.map(ch => {
+      if(ch.type==='text') return { type:10, content: ch.content||'' };
+      if(ch.type==='separator') return { type:14, divider: ch.divider !== false, spacing: ch.spacing ?? 1 };
+      if(ch.type==='section'){
+        const sec = { type:9, components:[ { type:10, content: ch.content||'' } ] };
+        if(ch.thumbnail_url) sec.accessory = { type:11, media:{ url: ch.thumbnail_url } };
+        return sec;
+      }
+      if(ch.type==='gallery'){
+        const urls = (ch.urls_raw||'').split('\n').map(s=>s.trim()).filter(Boolean);
+        return { type:12, items: urls.map(u=>({ media:{ url:u } })) };
+      }
+      if(ch.type==='actionrow'){
+        return { type:1, components: ch.buttons.map(b=>{
+          const btn = { type:2, style:b.style, label:b.label||'Button' };
+          if(b.style===5) btn.url = b.url||'';
+          return btn;
+        })};
+      }
+      if(ch.type==='select'){
+        const sel = {
+          type: ch.kind, custom_id: 'builder_select', disabled: true,
+          placeholder: ch.placeholder || undefined,
+          min_values: ch.min_values ?? 1, max_values: ch.max_values ?? 1
+        };
+        if(ch.kind === 3) sel.options = ch.options.filter(o=>o.label||o.value).map(o=>({
+          label: o.label || o.value || 'Option', value: o.value || o.label || 'option',
+          description: o.description || undefined
+        }));
+        return { type:1, components:[sel] };
+      }
+      if(ch.type==='raw') return ch.original || null;
+      return null;
+    }).filter(Boolean);
+
+    const containerObj = { type:17, components: kids };
+    if(c.color_enabled) containerObj.accent_color = hexToInt(c.accent_color);
+    return containerObj;
+  }).filter(c => c.components.length);
+
+  return { flags: 32768, components };
+}
+
+function currentJSON(){
+  return mode==='classic' ? buildClassicJSON() : buildCV2JSON();
+}
+
+function renderJSON(){
+  document.getElementById('json-output').value = JSON.stringify(currentJSON(), null, 2);
+  const statusEl = document.getElementById('import-status');
+  statusEl.textContent = 'In sync with the builder above.';
+  statusEl.className = 'import-status idle';
+}
+
+function copyJSON(){
+  const ta = document.getElementById('json-output');
+  ta.select();
+  navigator.clipboard?.writeText(ta.value).then(()=>{
+    const f = document.getElementById('copy-flash');
+    f.classList.add('show');
+    setTimeout(()=>f.classList.remove('show'), 1400);
+  }).catch(()=>{ document.execCommand('copy'); });
+}
+
+function downloadJSON(){
+  const blob = new Blob([JSON.stringify(currentJSON(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = mode==='classic' ? 'embed.json' : 'components.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 /* =========================================================================
-   JSON IMPORT — paste clean JSON OR a raw Discord-client dump and rebuild
-   the builder state from it (mirrors the normalization your bot's /embed
-   command does: rawTitle/rawDescription/rawName/rawValue fallbacks,
-   camelCase keys, hsla()/rgb() color strings, proxy URLs, etc.)
+   JSON IMPORT — auto-parses whatever's in the textarea, debounced, so you
+   can paste raw Discord dumps OR hand-edit an embed you just built, and it
+   reflects back into the builder + preview without a manual button click.
    ========================================================================= */
 
 function clampByte(n){ return Math.max(0, Math.min(255, Math.round(n))); }
@@ -819,11 +1020,6 @@ function hslToHex(h, s, l){
   return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 
-/* Accepts an int (0xRRGGBB), a "#rrggbb" hex string, "rgb()/rgba()",
-   Discord's "hsla(H, calc(var(--saturation-factor,1) * S%), L%, A)" client
-   placeholder, or a plain "hsl()/hsla()" string. Returns a "#rrggbb" hex
-   string, or null if it can't be resolved (e.g. the color was never set —
-   matches the bot's own normalize_embed_color behavior). */
 function colorAnyToHex(value){
   if(value === null || value === undefined) return null;
   if(typeof value === 'number') return '#' + (value & 0xFFFFFF).toString(16).padStart(6,'0');
@@ -847,10 +1043,6 @@ function colorAnyToHex(value){
   return isNaN(asInt) ? null : '#' + (asInt & 0xFFFFFF).toString(16).padStart(6,'0');
 }
 
-/* Generic camelCase -> snake_case + junk-stripping cleaner for a raw
-   Discord-client component node. Used both to build clean re-exportable
-   JSON for 'raw' passthrough children, and as a safety net for anything
-   this builder doesn't have a dedicated editor for. */
 function cleanComponentNode(node){
   if(!node || typeof node !== 'object') return node;
   const out = { type: node.type };
@@ -895,7 +1087,9 @@ function normalizeEmbedDict(raw){
   e.description = raw.description ?? raw.rawDescription ?? '';
   e.url = raw.url ?? '';
   const rawColor = raw.color ?? raw.colour;
-  e.color = colorAnyToHex(rawColor) || '#5865f2';
+  const resolved = colorAnyToHex(rawColor);
+  e.color = resolved || '#5865f2';
+  e.color_enabled = !!resolved;
   e.timestamp = !!raw.timestamp;
   if(raw.author){
     e.author.name = raw.author.name ?? '';
@@ -940,7 +1134,6 @@ function parseCV2Child(raw){
     if(acc && acc.type === 11){
       return { type:'section', content: textParts.join('\n\n'), thumbnail_url: acc.media?.url ?? '' };
     }
-    // Non-thumbnail accessory (e.g. a button) — no dedicated editor, preserve as-is.
     return { type:'raw', original: cleanComponentNode(raw) };
   }
   if(t === 12){
@@ -949,14 +1142,26 @@ function parseCV2Child(raw){
   }
   if(t === 1){
     const kids = raw.components || [];
+    if(kids.length === 1 && [3,5,6,7,8].includes(kids[0]?.type)){
+      const s = kids[0];
+      const child = {
+        type:'select', kind: s.type,
+        placeholder: s.placeholder ?? '',
+        min_values: s.minValues ?? s.min_values ?? 1,
+        max_values: s.maxValues ?? s.max_values ?? 1,
+        options: []
+      };
+      if(s.type === 3 && Array.isArray(s.options)){
+        child.options = s.options.map(o => ({ label:o.label??'', value:o.value??'', description:o.description??'' }));
+      }
+      return child;
+    }
     const allButtons = kids.length>0 && kids.every(k => k && k.type === 2);
     if(allButtons){
       return { type:'actionrow', buttons: kids.map(b => ({ style: b.style ?? 5, label: b.label ?? '', url: b.url ?? '' })) };
     }
-    // Contains a select menu or a mix — no dedicated editor, preserve as-is.
     return { type:'raw', original: cleanComponentNode(raw) };
   }
-  // Unknown/unsupported type — preserve as-is rather than dropping it.
   return { type:'raw', original: cleanComponentNode(raw) };
 }
 
@@ -966,23 +1171,38 @@ function buildCV2StateFromPayload(parsed){
 
   for(const comp of topLevel){
     if(comp && comp.type === 17){
+      const resolved = colorAnyToHex(comp.accentColor ?? comp.accent_color);
       containers.push({
-        accent_color: colorAnyToHex(comp.accentColor ?? comp.accent_color) || '#5865f2',
+        accent_color: resolved || '#5865f2',
+        color_enabled: !!resolved,
         children: (comp.components || []).map(parseCV2Child)
       });
     } else if(comp){
-      // A bare top-level component outside any Container — wrap it in an
-      // implicit container so nothing pasted gets silently dropped.
-      containers.push({ accent_color: '#5865f2', children: [parseCV2Child(comp)] });
+      containers.push({ accent_color:'#5865f2', color_enabled:false, children: [parseCV2Child(comp)] });
     }
   }
 
   return { containers: containers.length ? containers : [newContainer()] };
 }
 
-function importFromJSON(){
+let importDebounceTimer = null;
+function onJSONTextareaInput(){
+  clearTimeout(importDebounceTimer);
+  const statusEl = document.getElementById('import-status');
+  statusEl.textContent = 'Typing...';
+  statusEl.className = 'import-status idle';
+  importDebounceTimer = setTimeout(runAutoImport, 550);
+}
+
+function runAutoImport(){
   const statusEl = document.getElementById('import-status');
   const raw = document.getElementById('json-output').value;
+
+  if(!raw.trim()){
+    statusEl.textContent = 'Nothing to build yet.';
+    statusEl.className = 'import-status idle';
+    return;
+  }
 
   let parsed;
   try{
@@ -993,7 +1213,7 @@ function importFromJSON(){
     return;
   }
   if(typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)){
-    statusEl.textContent = '✕ JSON must be an object ({...}), not ' + (Array.isArray(parsed)?'an array':typeof parsed) + '.';
+    statusEl.textContent = '✕ JSON must be an object ({...}).';
     statusEl.className = 'import-status err';
     return;
   }
@@ -1019,109 +1239,11 @@ function importFromJSON(){
   document.getElementById('builder-classic').style.display = mode==='classic' ? 'block':'none';
   document.getElementById('builder-cv2').style.display = mode==='cv2' ? 'block':'none';
 
-  renderAll();
-  renderJSON(); // re-render with the clean, normalized version
+  if(mode==='classic') renderClassicBuilder(); else renderCV2Builder();
+  if(mode==='classic') renderClassicPreview(); else renderCV2Preview();
 
-  statusEl.textContent = '✓ Built successfully — switched to ' + (mode==='cv2' ? 'Components V2' : 'Classic Embed') + ' mode. Check the Preview tab.';
+  statusEl.textContent = '✓ Built — showing ' + (mode==='cv2' ? 'Components V2' : 'Classic Embed') + '. Check the Preview tab.';
   statusEl.className = 'import-status ok';
-}
-
-function renderRawComponent(original){
-  if(!original) return `<div class="raw-note">Preserved component (details unavailable).</div>`;
-  if(original.type === 1){
-    const items = (original.components || []).map(c => {
-      if(c.type === 2) return `<button class="dc-button style-${c.style||2}">${escapeHTML(c.label)||'Button'}</button>`;
-      if([3,5,6,7,8].includes(c.type)) return `<div class="dc-select">${escapeHTML(c.placeholder || 'Select menu')}</div>`;
-      return '';
-    }).join('');
-    return `<div class="dc-actionrow" style="align-items:stretch;">${items}</div>`;
-  }
-  return `<div class="raw-note">Preserved component (type ${original.type}) — no preview available for this type.</div>`;
-}
-
-function buildClassicJSON(){
-  const payload = {};
-  if(classicState.content) payload.content = classicState.content;
-
-  const embeds = classicState.embeds
-    .filter(e => e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text||e.url)
-    .map(e => {
-      const d = {};
-      if(e.title) d.title = e.title;
-      if(e.description) d.description = e.description;
-      if(e.url) d.url = e.url;
-      d.color = hexToInt(e.color);
-      if(e.timestamp) d.timestamp = new Date().toISOString();
-      if(e.author.name) d.author = Object.fromEntries(Object.entries(e.author).filter(([,v])=>v));
-      if(e.thumbnail.url) d.thumbnail = { url: e.thumbnail.url };
-      if(e.image.url) d.image = { url: e.image.url };
-      if(e.footer.text) d.footer = Object.fromEntries(Object.entries(e.footer).filter(([,v])=>v));
-      if(e.fields.length) d.fields = e.fields.filter(f=>f.name||f.value).map(f=>({name:f.name||'\u200b', value:f.value||'\u200b', inline:!!f.inline}));
-      return d;
-    });
-
-  if(embeds.length === 1) payload.embed = embeds[0];
-  else if(embeds.length > 1) payload.embeds = embeds;
-
-  return payload;
-}
-
-function buildCV2JSON(){
-  const components = cv2State.containers.map(c => {
-    const kids = c.children.map(ch => {
-      if(ch.type==='text') return { type:10, content: ch.content||'' };
-      if(ch.type==='separator') return { type:14, divider: ch.divider !== false, spacing: ch.spacing ?? 1 };
-      if(ch.type==='section'){
-        const sec = { type:9, components:[ { type:10, content: ch.content||'' } ] };
-        if(ch.thumbnail_url) sec.accessory = { type:11, media:{ url: ch.thumbnail_url } };
-        return sec;
-      }
-      if(ch.type==='gallery'){
-        const urls = (ch.urls_raw||'').split('\n').map(s=>s.trim()).filter(Boolean);
-        return { type:12, items: urls.map(u=>({ media:{ url:u } })) };
-      }
-      if(ch.type==='actionrow'){
-        return { type:1, components: ch.buttons.map(b=>{
-          const btn = { type:2, style:b.style, label:b.label||'Button' };
-          if(b.style===5) btn.url = b.url||'';
-          return btn;
-        })};
-      }
-      if(ch.type==='raw') return ch.original || null;
-      return null;
-    }).filter(Boolean);
-
-    return { type:17, accent_color: hexToInt(c.accent_color), components: kids };
-  }).filter(c => c.components.length);
-
-  return { flags: 32768, components };
-}
-
-function currentJSON(){
-  return mode==='classic' ? buildClassicJSON() : buildCV2JSON();
-}
-
-function renderJSON(){
-  document.getElementById('json-output').value = JSON.stringify(currentJSON(), null, 2);
-}
-
-function copyJSON(){
-  const ta = document.getElementById('json-output');
-  ta.select();
-  navigator.clipboard?.writeText(ta.value).then(()=>{
-    const f = document.getElementById('copy-flash');
-    f.classList.add('show');
-    setTimeout(()=>f.classList.remove('show'), 1400);
-  }).catch(()=>{ document.execCommand('copy'); });
-}
-
-function downloadJSON(){
-  const blob = new Blob([JSON.stringify(currentJSON(), null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = mode==='classic' ? 'embed.json' : 'components.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
 }
 
 /* =========================================================================
@@ -1134,7 +1256,7 @@ function loadSample(){
       embeds:[{
         title:'Welcome to the server!',
         description:'Glad to have you here. Check **#rules** and grab a role in **#roles**.',
-        url:'', color:'#5865f2', timestamp:true,
+        url:'', color:'#5865f2', color_enabled:true, timestamp:true,
         author:{name:'Server Bot', url:'', icon_url:''},
         thumbnail:{url:''}, image:{url:''},
         footer:{text:'Member #1,204', icon_url:''},
@@ -1148,13 +1270,17 @@ function loadSample(){
   } else {
     cv2State = {
       containers:[{
-        accent_color:'#5865f2',
+        accent_color:'#5865f2', color_enabled:true,
         children:[
           {type:'text', content:'# Welcome!\n> Glad to have you here.'},
           {type:'separator'},
           {type:'actionrow', buttons:[
             {style:5, label:'Read the rules', url:'https://discord.com'},
             {style:2, label:'Get roles', url:''}
+          ]},
+          {type:'select', kind:3, placeholder:'Pick a color role', min_values:1, max_values:1, options:[
+            {label:'Red team', value:'red', description:'Join the red team'},
+            {label:'Blue team', value:'blue', description:'Join the blue team'}
           ]}
         ]
       }]
@@ -1172,11 +1298,21 @@ function resetAll(){
 
 /* =========================================================================
    MASTER RENDER
+   refreshPreview(): cheap, called on every keystroke — never touches the
+   builder panel's DOM, so focus/cursor position in whatever you're typing
+   into is never disturbed.
+   renderAll(): full rebuild — only called after STRUCTURAL changes (add/
+   remove/reorder/tab-switch/import/mode-switch) where there's no risk of
+   interrupting active typing.
    ========================================================================= */
-function renderAll(){
-  if(mode==='classic'){ renderClassicBuilder(); renderClassicPreview(); }
-  else { renderCV2Builder(); renderCV2Preview(); }
+function refreshPreview(){
+  if(mode==='classic') renderClassicPreview(); else renderCV2Preview();
   if(document.getElementById('preview-json').style.display !== 'none') renderJSON();
+}
+
+function renderAll(){
+  if(mode==='classic') renderClassicBuilder(); else renderCV2Builder();
+  refreshPreview();
 }
 
 renderAll();
