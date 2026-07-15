@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Preview renderer adapted from Discohook's open-source preview components.
+  Source: https://github.com/discohook/discohook
+  License: GNU Affero General Public License v3.0 (AGPL-3.0)
+  The builder/editor code outside the preview remains part of Embed Forge.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -221,173 +227,193 @@
   .pane-body::-webkit-scrollbar-thumb{ background: var(--forge-border); border-radius:6px; }
   .pane-body::-webkit-scrollbar-thumb:hover{ background: var(--forge-brass-dim); }
 
+  /* ======================================================================
+     DISCOHOOK-STYLE DISCORD PREVIEW
+     Structure and measurements are adapted from Discohook's AGPL-3.0
+     Message, Embed, Container, ActionRow, Section, Separator, TextDisplay,
+     Gallery and Markdown preview components.
+     ====================================================================== */
   .discord-pane{
-    background:#323339; min-height:100%; padding:24px 24px 60px;
-    font-family:"gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --dh-chat:#313338;
+    --dh-surface:#2b2d31;
+    --dh-surface-border:#434349;
+    --dh-text:#dbdee1;
+    --dh-text-strong:#f2f3f5;
+    --dh-muted:#949ba4;
+    --dh-link:#00a8fc;
+    --dh-blurple:#5865f2;
+    background:var(--dh-chat); min-height:100%; padding:24px 16px 64px;
+    color:var(--dh-text);
+    font-family:"gg sans","Noto Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:16px; line-height:1.375; text-rendering:optimizeLegibility;
   }
-  .dc-message{ display:flex; gap:16px; max-width:780px; }
-  .dc-avatar{
-    width:40px; height:40px; border-radius:50%; flex-shrink:0; margin-top:2px;
-    background: linear-gradient(135deg, var(--dc-blurple), #8c98ff);
-    display:flex; align-items:center; justify-content:center; font-size:18px;
+  .dh-message{ display:flex; align-items:flex-start; width:100%; max-width:760px; min-width:0; }
+  .dh-avatar-wrap{ width:40px; height:40px; margin-right:12px; flex:0 0 40px; }
+  .dh-avatar{
+    display:block; width:40px; height:40px; border-radius:50%; object-fit:cover;
+    background:#5865f2; box-shadow:0 0 0 1px rgba(0,0,0,.08);
   }
-  .dc-body{ min-width:0; flex:1; }
-  .dc-header{ display:flex; align-items:baseline; gap:8px; margin-bottom:2px; }
-  .dc-username{ color:#f2f3f5; font-weight:600; font-size:15.5px; }
-  .dc-bot-tag{
-    background: var(--dc-blurple); color:#fff; font-size:10px; font-weight:600;
-    padding:1px 5px; border-radius:3px; line-height:1.4;
+  .dh-message-main{ flex:1 1 auto; min-width:0; }
+  .dh-author-line{ height:20px; line-height:20px; white-space:nowrap; }
+  .dh-username{
+    color:var(--dh-text-strong); font-size:16px; font-weight:500;
+    cursor:default; vertical-align:baseline;
   }
-  .dc-time{ color: var(--dc-text-muted); font-size:11.5px; }
-
-  .dc-content{ color: var(--dc-text); font-size:15px; line-height:1.4; white-space:pre-wrap; word-break:break-word; margin-bottom:4px; }
-  .dc-content:empty{ display:none; }
-
-  .dc-embed{
-    display:flex; width:100%; max-width:520px; margin-top:4px; border-radius:4px; overflow:hidden;
-    background: var(--dc-card-bg); border:1px solid rgba(0,0,0,.15);
+  .dh-username:hover{ text-decoration:underline; text-underline-offset:2px; }
+  .dh-app-badge{
+    display:inline-flex; align-items:center; height:15px; margin:3px 0 0 4px;
+    padding:0 4.4px; border-radius:3px; vertical-align:top;
+    background:var(--dh-blurple); color:#fff; font-size:10px; line-height:15px;
+    font-weight:600; text-transform:uppercase;
   }
-  .dc-embed .dc-embed-accent{ width:4px; flex-shrink:0; background: var(--dc-blurple); }
-  .dc-embed .dc-embed-body{ padding:12px 16px; flex:1; min-width:0; display:flex; align-items:flex-start; gap:16px; }
-  .dc-embed .dc-embed-main{ flex:1; min-width:0; }
-  .dc-embed .dc-embed-thumb{
-    width:80px; height:80px; border-radius:4px; object-fit:cover; flex-shrink:0; background:#1e1f22;
+  .dh-time{ margin-left:4px; color:var(--dh-muted); font-size:12px; font-weight:500; vertical-align:baseline; }
+  .dh-content{
+    color:var(--dh-text); font-size:16px; font-weight:400; line-height:1.375;
+    white-space:pre-line; overflow-wrap:anywhere; min-width:0;
   }
-
-  .dc-e-author{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-  .dc-e-author img{ width:24px; height:24px; border-radius:50%; object-fit:cover; }
-  .dc-e-author span{ color:#f2f3f5; font-size:14px; font-weight:600; }
-  .dc-e-title{ color:#f2f3f5; font-size:15px; font-weight:600; margin-bottom:6px; line-height:1.3; }
-  .dc-e-title a{ color:#00a8fc; text-decoration:none; }
-  .dc-e-desc{ color: var(--dc-text); font-size:13.75px; line-height:1.4; white-space:pre-wrap; word-break:break-word; }
-  .dc-e-fields{ display:grid; gap:8px; margin-top:10px; }
-  .dc-e-field{ min-width:0; }
-  .dc-e-field .fname{ color:#f2f3f5; font-size:13.75px; font-weight:600; margin-bottom:2px; }
-  .dc-e-field .fval{ color: var(--dc-text); font-size:13.75px; line-height:1.4; white-space:pre-wrap; word-break:break-word; }
-  .dc-e-image{ margin-top:10px; max-width:100%; border-radius:4px; display:block; }
-  .dc-e-footer{ display:flex; align-items:center; gap:8px; margin-top:10px; }
-  .dc-e-footer img{ width:20px; height:20px; border-radius:50%; object-fit:cover; }
-  .dc-e-footer span{ color: var(--dc-text-muted); font-size:12px; }
-
-  .dc-e-empty{ color: var(--dc-text-muted); font-size:13px; font-style:italic; padding:20px; text-align:center; }
-
-  /* Components V2 containers use a different surface from classic embeds.
-     These measurements and colours mirror Discord's current desktop client. */
-  .dc-container{
-    width:100%; max-width:490px; margin-top:8px; border-radius:8px; overflow:hidden;
-    background:#393a41; border:1px solid #44454c; border-left:4px solid var(--dc-blurple);
-    padding:16px 16px 15px 13px; display:flex; flex-direction:column; gap:10px;
-    font-family:"gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  }
-  .dc-container.no-accent{
-    border-left-width:1px; border-left-color:#44454c !important; padding-left:16px;
-  }
-  .dc-textdisplay{
-    color:#d7d8dc; font-size:14px; line-height:1.375; white-space:pre-wrap; word-break:break-word; min-width:0;
-  }
-  .dc-separator{ height:1px; background:#4c4c54; margin:0; flex-shrink:0; }
-  .dc-section{ display:flex; gap:16px; align-items:flex-start; min-width:0; }
-  .dc-section .dc-textdisplay{ flex:1; min-width:0; }
-  .dc-section-thumb{
-    width:85px; height:85px; border-radius:6px; object-fit:cover; flex-shrink:0; background:#1e1f22;
-  }
-  .dc-gallery{ display:grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap:6px; }
-  .dc-gallery img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; background:#1e1f22; }
-  .dc-gallery-single{
-    display:block; width:100%; max-height:300px; object-fit:cover;
-    border-radius:6px; background:#1e1f22;
+  .dh-content:empty{ display:none; }
+  .dh-empty{
+    max-width:520px; margin-top:8px; padding:12px; border:1px dashed #4a4c54;
+    border-radius:8px; color:var(--dh-muted); font-size:13px; text-align:center;
   }
 
-  /* Components V2 text displays follow normal Discord message markdown, not
-     the smaller classic-embed typography. Keep these overrides scoped so the
-     classic embed preview remains accurate. */
-  .dc-container .md-rich h1{
-    color:#fff; font-size:24px; line-height:1.25; font-weight:700; letter-spacing:-.015em; margin:0 0 8px;
+  .dh-embed-stack{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin-top:4px; }
+  .dh-embed{
+    --embed-accent:#4a4a50;
+    display:inline-grid; grid-template-columns:minmax(0,1fr) auto;
+    width:auto; max-width:520px; min-width:0;
+    padding:2px 16px 16px 12px; overflow:hidden;
+    background:var(--dh-surface); color:var(--dh-text);
+    border:1px solid var(--dh-surface-border); border-left:4px solid var(--embed-accent);
+    border-radius:4px;
   }
-  .dc-container .md-rich h2{
-    color:#fff; font-size:20px; line-height:1.25; font-weight:700; letter-spacing:-.01em; margin:0 0 6px;
+  .dh-embed > :not(.dh-embed-thumb){ grid-column:1; min-width:0; }
+  .dh-embed-author{ display:flex; align-items:center; min-width:0; margin-top:8px; }
+  .dh-embed-author-icon{ width:24px; height:24px; margin-right:8px; border-radius:50%; object-fit:cover; flex:none; }
+  .dh-embed-author-name{ color:var(--dh-text-strong); font-size:14px; line-height:18px; font-weight:500; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .dh-embed-author-name a{ color:inherit; text-decoration:none; }
+  .dh-embed-author-name a:hover{ text-decoration:underline; text-underline-offset:2px; }
+  .dh-embed-title{ margin-top:8px; color:var(--dh-text-strong); font-size:16px; line-height:1.375; font-weight:600; overflow-wrap:anywhere; }
+  .dh-embed-title a{ color:var(--dh-link); text-decoration:none; }
+  .dh-embed-title a:hover{ text-decoration:underline; text-underline-offset:2px; }
+  .dh-embed-description{ margin-top:8px; color:var(--dh-text); font-size:14px; line-height:18px; font-weight:400; white-space:pre-line; overflow-wrap:anywhere; }
+  .dh-embed-fields{
+    display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:8px;
+    margin-top:8px; min-width:0; color:var(--dh-text); font-size:14px; line-height:18px;
   }
-  .dc-container .md-rich h3{
-    color:#fff; font-size:16px; line-height:1.25; font-weight:700; margin:0 0 4px;
+  .dh-embed-field{ min-width:0; overflow-wrap:anywhere; }
+  .dh-field-name{ margin-bottom:1px; color:var(--dh-text-strong); font-weight:600; }
+  .dh-field-value{ color:var(--dh-text); font-weight:400; white-space:pre-line; }
+  .dh-embed-thumb{
+    grid-column:2; grid-row:1 / span 8; align-self:start; justify-self:end;
+    display:block; max-width:80px; max-height:80px; margin:8px 0 0 16px;
+    border-radius:4px; object-fit:contain; background:#1e1f22;
   }
-  .dc-container .md-rich blockquote{
-    margin:0; padding:0 0 0 12px; border-left:4px solid #595a63; border-radius:2px; color:#c9cbd0;
+  .dh-embed-image-wrap{ width:100%; margin-top:8px; }
+  .dh-embed-image{
+    display:block; width:auto; max-width:100%; max-height:350px; border-radius:8px;
+    object-fit:contain; background:#1e1f22;
   }
-  .dc-container .md-rich code{
-    background:#3c3d4f; color:#fff; border:1px solid #4e4f5f;
-    padding:.1em .32em; border-radius:4px; font-family:Consolas, "Courier New", monospace; font-size:.85em;
-  }
-  .dc-container .md-rich pre{
-    width:100%; margin:0; padding:8px; overflow-x:auto;
-    background:#3c3d4f; color:#fff; border:1px solid #4e4f5f; border-radius:5px;
-    font-family:Consolas, "Courier New", monospace; font-size:13px; line-height:1.4;
-    white-space:pre;
-  }
-  .dc-container .md-rich pre code{
-    background:none; border:0; padding:0; border-radius:0; font-size:1em;
-  }
-  .dc-container .md-rich a{ color:#69aef0 !important; }
-  .dc-container .md-rich ul.md-list, .dc-container .md-rich ol.md-list{ margin:0; }
-  .dc-actionrow{ display:flex; gap:8px; flex-wrap:wrap; }
-  .dc-button{
-    padding:7px 14px; border-radius:6px; font-size:13.5px; font-weight:500;
-    border:none; cursor:default; color:#fff;
-  }
-  .dc-button.style-1{ background:#5865f2; }
-  .dc-button.style-2{ background:#4e5058; }
-  .dc-button.style-3{ background:#248046; }
-  .dc-button.style-4{ background:#da373c; }
-  .dc-button.style-5{ background:#4e5058; text-decoration:underline; }
-  .dc-select{
-    width:100%; padding:9px 12px; border-radius:6px; background:#1e1f22; color:#949ba4;
-    font-size:13.5px; border:none; display:flex; align-items:center; gap:6px;
-  }
-  .dc-select .sel-caret{ margin-left:auto; opacity:.6; }
+  .dh-embed-footer{ display:flex; align-items:center; min-width:0; margin-top:8px; color:var(--dh-text); font-size:12px; line-height:16px; font-weight:500; }
+  .dh-embed-footer-icon{ width:20px; height:20px; margin-right:8px; border-radius:50%; object-fit:contain; flex:none; }
+  .dh-embed-footer-text{ white-space:pre-wrap; overflow-wrap:anywhere; }
 
-  /* --- Universal Discord-accurate markdown rendering (applies to classic
-     embed content/description/fields AND Components V2 text displays —
-     these must all look identical to how Discord itself renders them) --- */
-  .md-rich{ }
-  .md-rich blockquote{
-    margin: 2px 0; padding: 0 0 0 12px;
-    border-left: 4px solid #4e5058;
-    color: inherit;
+  .dh-components{ display:flex; flex-direction:column; align-items:stretch; width:fit-content; max-width:min(600px,100%); gap:6px; margin-top:2px; overflow:hidden; }
+  .dh-container{
+    --container-accent:transparent;
+    position:relative; display:flex; flex-direction:column; flex-grow:1; gap:6px;
+    width:100%; max-width:520px; min-width:0; padding:16px; overflow:hidden;
+    color:var(--dh-text-strong); background:var(--dh-surface);
+    border:1px solid var(--dh-surface-border); border-radius:8px;
   }
-  .md-rich code{
-    background: rgba(46,48,53,.6); color:#f8f8f8;
-    padding: 0.2em 0.4em; border-radius:4px;
-    font-family: 'Consolas', 'Courier New', monospace; font-size:.85em;
+  .dh-container.has-accent::before{
+    content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--container-accent);
   }
-  .md-rich pre{
-    background:#393a41; border:1px solid #1e1f22;
-    padding:0.75em 0.85em; border-radius:5px; overflow-x:auto;
-    font-family:'Consolas', 'Courier New', monospace; font-size:13px; line-height:1.4;
-    margin: 4px 0;
+  .dh-text-display{ color:var(--dh-text); font-size:14px; line-height:1.375; font-weight:400; white-space:pre-line; overflow-wrap:anywhere; min-width:0; }
+  .dh-separator{ width:100%; height:0; margin:0; border:0; border-top:1px solid rgba(128,132,142,.5); }
+  .dh-section{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .dh-section-row{ display:flex; justify-content:space-between; gap:12px; min-width:0; }
+  .dh-section-text{ display:flex; flex:1 1 auto; flex-direction:column; gap:4px; min-width:0; }
+  .dh-section-thumb{
+    width:85px; height:85px; max-width:85px; max-height:85px; flex:0 0 85px;
+    border-radius:8px; overflow:hidden; object-fit:cover; background:#1e1f22;
   }
-  .md-rich pre code{ background:none; padding:0; border-radius:0; font-size:1em; }
-  .md-rich ul.md-list, .md-rich ol.md-list{
-    margin: 2px 0; padding-left: 1.5em;
+
+  .dh-action-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .dh-button{
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+    min-width:60px; max-width:100%; height:32px; padding:0 16px;
+    border:1px solid rgba(255,255,255,.08); border-radius:8px;
+    color:#fff; font:500 14px/20px inherit; white-space:nowrap; overflow:hidden;
+    cursor:default; transition:background-color .12s ease,border-color .12s ease;
   }
-  .md-rich ul.md-list{ list-style: disc; }
-  .md-rich ol.md-list{ list-style: decimal; }
-  .md-rich ul.md-list li, .md-rich ol.md-list li{
-    margin: 2px 0; padding-left: 0.15em;
+  .dh-button.style-1{ background:#5865f2; }
+  .dh-button.style-2,.dh-button.style-5{ background:rgba(151,151,159,.12); color:#ebebed; border-color:rgba(151,151,159,.04); }
+  .dh-button.style-3{ background:#00863a; }
+  .dh-button.style-4{ background:#d22d39; }
+  .dh-button-label{ display:inline-flex; align-items:center; min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  .dh-button .md-emoji{ width:22px; height:22px; margin-right:4px; vertical-align:middle; }
+  .dh-external-icon{ width:14px; height:14px; margin-left:6px; flex:none; }
+
+  .dh-select-wrap{ position:relative; width:100%; max-width:400px; margin-right:16px; }
+  .dh-select{
+    display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:8px;
+    width:100%; min-height:36px; padding:8px; box-sizing:border-box;
+    color:var(--dh-muted); background:#1e1f22; border:1px solid transparent;
+    border-radius:8px; font-size:14px; line-height:18px; font-weight:500; text-align:left;
+    cursor:pointer; transition:border-color .2s ease;
   }
-  .md-rich h1{ font-size:1.375em; font-weight:700; margin:8px 0 4px; color:#f2f3f5; line-height:1.2; }
-  .md-rich h2{ font-size:1.125em; font-weight:700; margin:8px 0 4px; color:#f2f3f5; line-height:1.2; }
-  .md-rich h3{ font-size:1em; font-weight:700; margin:6px 0 2px; color:#f2f3f5; line-height:1.2; }
-  .md-rich .md-subtext{ color:#949ba4; font-size:.75em; }
-  .md-emoji{ height:1.375em; width:auto; vertical-align:-0.3em; object-fit:contain; }
-  .md-emoji.jumbo{ height:2.75em; width:auto; vertical-align:-0.6em; }
-  .md-mention{
-    background: rgba(88,101,242,.3); color:#c9cdfb;
-    padding: 0 2px; border-radius:3px; font-weight:500; cursor:default;
+  .dh-select:hover{ border-color:#020202; }
+  .dh-select-label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dh-select-chevron{ width:18px; height:18px; transition:transform .15s ease; }
+  .dh-select-wrap.open .dh-select-chevron{ transform:rotate(180deg); }
+  .dh-select-menu{
+    display:none; position:absolute; z-index:20; top:calc(100% + 4px); left:0; right:0;
+    max-height:256px; overflow-y:auto; background:#3c3d44;
+    border:1px solid #1e1f22; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.35);
   }
-  .md-mention:hover{ background: rgba(88,101,242,.5); text-decoration:underline; }
-  .md-timestamp{
-    background: rgba(78,80,88,.3); color: var(--dc-text);
-    padding: 1px 4px; border-radius:3px; cursor:default;
-  }
+  .dh-select-wrap.open .dh-select-menu{ display:block; }
+  .dh-select-option{ display:flex; align-items:center; gap:8px; width:100%; padding:8px; cursor:default; }
+  .dh-select-option:hover{ background:#43444b; }
+  .dh-select-option-icon{ width:22px; height:22px; flex:none; object-fit:contain; }
+  .dh-select-option-copy{ min-width:0; font-size:14px; font-weight:500; line-height:18px; }
+  .dh-select-option-title,.dh-select-option-desc{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dh-select-option-desc{ color:#b5bac1; }
+
+  .dh-gallery{ display:grid; width:100%; max-width:100%; max-height:350px; gap:4px; overflow:hidden; border-radius:8px; }
+  .dh-gallery.count-1{ display:block; }
+  .dh-gallery.count-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dh-gallery.count-3{ grid-template-columns:2fr 1fr; grid-template-rows:repeat(2,minmax(0,1fr)); }
+  .dh-gallery.count-3 .dh-gallery-item:first-child{ grid-row:1 / 3; }
+  .dh-gallery.count-4,.dh-gallery.many{ grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); }
+  .dh-gallery-item{ position:relative; min-width:0; min-height:0; overflow:hidden; background:#1e1f22; }
+  .dh-gallery.count-1 .dh-gallery-item{ display:inline-block; max-width:100%; max-height:350px; border-radius:8px; }
+  .dh-gallery-image{ display:block; width:100%; height:100%; min-height:110px; object-fit:cover; }
+  .dh-gallery.count-1 .dh-gallery-image{ width:auto; max-width:100%; max-height:350px; min-height:0; object-fit:contain; border-radius:8px; }
+  .dh-gallery-more{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; background:rgba(0,0,0,.56); font-size:28px; font-weight:600; }
+
+  /* Discord markdown details used by both classic embeds and Components V2. */
+  .md-rich{ min-width:0; }
+  .md-rich a{ color:var(--dh-link); text-decoration:none; }
+  .md-rich a:hover{ text-decoration:underline; text-underline-offset:2px; }
+  .md-rich strong,.md-rich b{ color:inherit; font-weight:700; }
+  .md-rich blockquote{ margin:2px 0; padding-left:12px; border-left:4px solid #4e5058; color:inherit; }
+  .md-rich code{ padding:.2em .4em; border-radius:4px; color:#f8f8f8; background:#1e1f22; font-family:Consolas,"Courier New",monospace; font-size:.85em; }
+  .md-rich pre{ max-width:100%; margin:4px 0; padding:8px; overflow:auto; border:1px solid #111214; border-radius:4px; color:#dbdee1; background:#1e1f22; font:13px/1.4 Consolas,"Courier New",monospace; white-space:pre; }
+  .md-rich pre code{ padding:0; border:0; background:none; font-size:inherit; }
+  .md-rich ul.md-list,.md-rich ol.md-list{ margin:2px 0; padding-left:24px; }
+  .md-rich li{ margin:2px 0; }
+  .md-rich h1,.md-rich h2,.md-rich h3{ color:var(--dh-text-strong); font-weight:700; overflow-wrap:anywhere; }
+  .dh-content.md-rich h1,.dh-text-display.md-rich h1{ margin:0 0 8px; font-size:24px; line-height:30px; }
+  .dh-content.md-rich h2,.dh-text-display.md-rich h2{ margin:0 0 6px; font-size:20px; line-height:25px; }
+  .dh-content.md-rich h3,.dh-text-display.md-rich h3{ margin:0 0 4px; font-size:16px; line-height:20px; }
+  .dh-embed .md-rich h1,.dh-embed .md-rich h2,.dh-embed .md-rich h3{ margin:0; font-size:inherit; line-height:inherit; }
+  .md-rich .md-subtext{ color:var(--dh-muted); font-size:.75em; }
+  .md-emoji{ width:auto; height:1.375em; vertical-align:-.3em; object-fit:contain; }
+  .md-emoji.jumbo{ height:2.75em; vertical-align:-.6em; }
+  .md-mention{ padding:0 2px; border-radius:3px; color:#c9cdfb; background:rgba(88,101,242,.3); font-weight:500; }
+  .md-mention:hover{ color:#fff; background:#5865f2; }
+  .md-timestamp{ padding:1px 4px; border-radius:3px; color:var(--dh-text); background:rgba(78,80,88,.5); }
 
   .json-pane{ padding:20px; }
   .json-pane textarea{
@@ -1158,177 +1184,207 @@ function renderEmojiShorthand(str){
    ========================================================================= */
 function timeNowLabel(){
   const d = new Date();
-  return d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) + ' Today';
+  return 'Today at ' + d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+}
+
+function safePreviewUrl(value){
+  if(!value) return '';
+  try{
+    const u = new URL(String(value), window.location.href);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+  } catch{
+    return '';
+  }
+}
+
+function attr(value){ return escapeHTML(String(value ?? '')).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function discordAvatarHTML(){
+  return `<div class="dh-avatar-wrap"><img class="dh-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Your Bot" onerror="this.remove()"></div>`;
+}
+
+function externalLinkIcon(){
+  return `<svg class="dh-external-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V7.41l-7.3 7.3a1 1 0 0 1-1.4-1.42L16.58 6H14a1 1 0 0 1-1-1Z"/><path fill="currentColor" d="M5 6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5a1 1 0 1 0-2 0v5H5V8h5a1 1 0 1 0 0-2H5Z"/></svg>`;
+}
+
+function chevronIcon(){
+  return `<svg class="dh-select-chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.3 8.3a1 1 0 0 1 1.4 0l4.3 4.29 4.3-4.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 0 1 0-1.42Z"/></svg>`;
 }
 
 /* A field meant purely as a blank spacer (common Discord trick to force a
-   line break between rows) is usually built with a true zero-width space
-   ('\u200b') so it renders as nothing. If it was instead typed as a plain
-   dash/underscore/whitespace placeholder, Discord's real client would
-   still show that literal text — but since the clear INTENT is an
-   invisible spacer, this treats dash-only content the same way so it
-   doesn't leak through as visible stray dashes. */
+   line break between rows) is usually built with a true zero-width space. */
 function isSpacerLikeText(text){
   return !text || /^[\s\-–—_]*$/.test(text);
 }
 
-function buildOneField(f){
-  const nameOut = isSpacerLikeText(f.name) ? '\u200b' : renderInlineMarkdown(f.name);
-  const valueOut = isSpacerLikeText(f.value) ? '\u200b' : renderMarkdown(f.value);
-  return `
-    <div class="dc-e-field">
-      <div class="fname md-rich">${nameOut}</div>
-      <div class="fval md-rich">${valueOut}</div>
-    </div>
-  `;
+function fieldColumnBounds(runLength, index){
+  if(runLength === 3) return [[1,5],[5,9],[9,13]][index];
+  if(runLength === 2) return [[1,7],[7,13]][index];
+  return [1,13];
 }
 
-/* Groups fields into rows the way Discord actually does: consecutive
-   INLINE fields share a row together (up to 3 per row, sized to however
-   many are actually in that run — 2 inline fields get a 2-column row, not
-   squeezed into a fixed 3-column grid with a phantom empty slot). A
-   non-inline field always starts its own full-width row and breaks any
-   run of inline fields it interrupts. */
+function buildOneField(f, start, end){
+  const nameOut = isSpacerLikeText(f.name) ? '\u200b' : renderInlineMarkdown(f.name);
+  const valueOut = isSpacerLikeText(f.value) ? '\u200b' : renderMarkdown(f.value);
+  return `<div class="dh-embed-field" style="grid-column:${start} / ${end}">
+    <div class="dh-field-name md-rich">${nameOut}</div>
+    <div class="dh-field-value md-rich">${valueOut}</div>
+  </div>`;
+}
+
+/* Matches Discohook's 12-column field algorithm: consecutive inline fields
+   share a row (up to three); normal fields span all twelve columns. */
 function buildFieldRowsHTML(fields){
   if(!fields.length) return '';
-  const rows = [];
+  const output = [];
   let run = [];
-  const flushRun = () => {
-    if(run.length){
-      rows.push(`<div class="dc-e-fields" style="grid-template-columns: repeat(${run.length}, 1fr);">${run.map(buildOneField).join('')}</div>`);
-      run = [];
-    }
+  const flush = () => {
+    if(!run.length) return;
+    run.forEach((field, i) => {
+      const [start,end] = fieldColumnBounds(run.length, i);
+      output.push(buildOneField(field, start, end));
+    });
+    run = [];
   };
-  for(const f of fields){
-    if(f.inline){
-      run.push(f);
-      if(run.length === 3) flushRun();
-    } else {
-      flushRun();
-      rows.push(`<div class="dc-e-fields" style="grid-template-columns: 1fr;">${buildOneField(f)}</div>`);
+  for(const field of fields){
+    if(field.inline){
+      run.push(field);
+      if(run.length === 3) flush();
+    }else{
+      flush();
+      output.push(buildOneField(field, 1, 13));
     }
   }
-  flushRun();
-  return rows.join('');
+  flush();
+  return `<div class="dh-embed-fields">${output.join('')}</div>`;
+}
+
+function renderPreviewButton(button){
+  const style = Number(button.style) || 2;
+  const emoji = button.emoji ? renderEmojiShorthand(button.emoji) : '';
+  const link = style === 5 ? safePreviewUrl(button.url) : '';
+  const contents = `<button type="button" class="dh-button style-${style}" tabindex="-1"><span class="dh-button-label">${emoji}${emoji ? ' ' : ''}${escapeHTML(button.label)||'Button'}</span>${style===5?externalLinkIcon():''}</button>`;
+  return link ? `<a href="${attr(link)}" target="_blank" rel="noreferrer noopener" class="contents">${contents}</a>` : contents;
+}
+
+function renderMessageShell(inner, includeContent=true){
+  return `<div class="dh-message">
+    ${discordAvatarHTML()}
+    <div class="dh-message-main">
+      <div class="dh-author-line"><span class="dh-username">Your Bot</span><span class="dh-app-badge">APP</span><span class="dh-time">${timeNowLabel()}</span></div>
+      ${includeContent ? `<div class="dh-content md-rich">${renderMarkdown(classicState.content)}</div>` : ''}
+      ${inner}
+    </div>
+  </div>`;
+}
+
+function renderClassicEmbed(e){
+  if(!(e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text||e.timestamp)) return '';
+  const accent = e.color_enabled ? e.color : '#4a4a50';
+  const authorUrl = safePreviewUrl(e.author.url);
+  const titleUrl = safePreviewUrl(e.url);
+  const authorIcon = safePreviewUrl(e.author.icon_url);
+  const thumb = safePreviewUrl(e.thumbnail.url);
+  const image = safePreviewUrl(e.image.url);
+  const footerIcon = safePreviewUrl(e.footer.icon_url);
+  const fields = buildFieldRowsHTML(e.fields);
+
+  return `<div class="dh-embed" style="--embed-accent:${attr(accent)}">
+    ${e.author.name ? `<div class="dh-embed-author">${authorIcon?`<img class="dh-embed-author-icon" src="${attr(authorIcon)}" alt="" onerror="this.remove()">`:''}<div class="dh-embed-author-name">${authorUrl?`<a href="${attr(authorUrl)}" target="_blank" rel="noreferrer noopener">${escapeHTML(e.author.name)}</a>`:escapeHTML(e.author.name)}</div></div>`:''}
+    ${e.title ? `<div class="dh-embed-title md-rich">${titleUrl?`<a href="${attr(titleUrl)}" target="_blank" rel="noreferrer noopener">${renderInlineMarkdown(e.title)}</a>`:renderInlineMarkdown(e.title)}</div>`:''}
+    ${e.description ? `<div class="dh-embed-description md-rich">${renderMarkdown(e.description)}</div>`:''}
+    ${fields}
+    ${image?`<div class="dh-embed-image-wrap"><img class="dh-embed-image" src="${attr(image)}" alt="" onerror="this.parentElement.remove()"></div>`:''}
+    ${(e.footer.text||e.timestamp)?`<div class="dh-embed-footer">${footerIcon?`<img class="dh-embed-footer-icon" src="${attr(footerIcon)}" alt="" onerror="this.remove()">`:''}<div class="dh-embed-footer-text">${escapeHTML(e.footer.text)}${e.footer.text&&e.timestamp?' • ':''}${e.timestamp?timeNowLabel():''}</div></div>`:''}
+    ${thumb?`<img class="dh-embed-thumb" src="${attr(thumb)}" alt="Thumbnail" onerror="this.remove()">`:''}
+  </div>`;
 }
 
 function renderClassicPreview(){
   const wrap = document.getElementById('preview-discord');
-  let embedsHTML = classicState.embeds.map(e => {
-    if(!(e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text)) return '';
-    const fieldsHTML = buildFieldRowsHTML(e.fields);
-    const accentColor = e.color_enabled ? e.color : '#4e5058';
+  const embeds = classicState.embeds.map(renderClassicEmbed).filter(Boolean).join('');
+  const rows = classicState.buttonRows.filter(row=>row.length).map(row=>`<div class="dh-action-row">${row.map(renderPreviewButton).join('')}</div>`).join('');
+  let accessories = '';
+  if(embeds) accessories += `<div class="dh-embed-stack">${embeds}</div>`;
+  if(rows) accessories += `<div class="dh-components" style="margin-top:4px">${rows}</div>`;
+  if(!classicState.content && !accessories) accessories = `<div class="dh-empty">Nothing to preview yet — fill in a field on the left.</div>`;
+  wrap.innerHTML = renderMessageShell(accessories, true);
+}
 
-    return `
-      <div class="dc-embed">
-        <div class="dc-embed-accent" style="background:${accentColor}"></div>
-        <div class="dc-embed-body">
-          <div class="dc-embed-main">
-            ${e.author.name ? `<div class="dc-e-author">${e.author.icon_url?`<img src="${e.author.icon_url}" onerror="this.style.display='none'">`:''}<span>${escapeHTML(e.author.name)}</span></div>` : ''}
-            ${e.title ? `<div class="dc-e-title">${e.url ? `<a href="${e.url}" target="_blank">${escapeHTML(e.title)}</a>` : escapeHTML(e.title)}</div>` : ''}
-            ${e.description ? `<div class="dc-e-desc md-rich">${renderMarkdown(e.description)}</div>` : ''}
-            ${fieldsHTML}
-            ${e.image.url ? `<img class="dc-e-image" src="${e.image.url}" onerror="this.style.display='none'">` : ''}
-            ${(e.footer.text || e.timestamp) ? `
-              <div class="dc-e-footer">
-                ${e.footer.icon_url?`<img src="${e.footer.icon_url}" onerror="this.style.display='none'">`:''}
-                <span>${escapeHTML(e.footer.text)}${e.footer.text && e.timestamp ? ' • ' : ''}${e.timestamp ? timeNowLabel() : ''}</span>
-              </div>` : ''}
-          </div>
-          ${e.thumbnail.url ? `<img class="dc-embed-thumb" src="${e.thumbnail.url}" onerror="this.style.display='none'">` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
+let previewSelectCounter = 0;
+function togglePreviewSelect(event, id){
+  event.stopPropagation();
+  document.querySelectorAll('.dh-select-wrap.open').forEach(el=>{ if(el.id!==id) el.classList.remove('open'); });
+  document.getElementById(id)?.classList.toggle('open');
+}
+if(!window.__embedForgePreviewSelectBound){
+  document.addEventListener('click', ()=>document.querySelectorAll('.dh-select-wrap.open').forEach(el=>el.classList.remove('open')));
+  window.__embedForgePreviewSelectBound = true;
+}
 
-  const buttonRowsHTML = classicState.buttonRows
-    .filter(row => row.length)
-    .map(row => `<div class="dc-actionrow" style="margin-top:6px;">${row.map(b =>
-      `<button class="dc-button style-${b.style}">${b.emoji?renderEmojiShorthand(b.emoji)+' ':''}${escapeHTML(b.label)||'Button'}</button>`
-    ).join('')}</div>`).join('');
+function renderSelectOption(option){
+  const emoji = option.emoji ? renderEmojiShorthand(option.emoji) : '';
+  return `<div class="dh-select-option">${emoji?`<span class="dh-select-option-icon">${emoji}</span>`:''}<div class="dh-select-option-copy"><div class="dh-select-option-title">${escapeHTML(option.label||'Option')}</div>${option.description?`<div class="dh-select-option-desc">${escapeHTML(option.description)}</div>`:''}</div></div>`;
+}
 
-  wrap.innerHTML = `
-    <div class="dc-message">
-      <div class="dc-avatar">🤖</div>
-      <div class="dc-body">
-        <div class="dc-header">
-          <span class="dc-username">Your Bot</span>
-          <span class="dc-bot-tag">BOT</span>
-          <span class="dc-time">${timeNowLabel()}</span>
-        </div>
-        <div class="dc-content md-rich">${renderMarkdown(classicState.content)}</div>
-        ${embedsHTML || (!classicState.content ? `<div class="dc-e-empty">Nothing to preview yet — fill in a field on the left.</div>` : '')}
-        ${buttonRowsHTML}
-      </div>
-    </div>
-  `;
+function renderSelectMenu(ch){
+  const id = `dh-select-${++previewSelectCounter}`;
+  const label = escapeHTML(ch.placeholder) || SELECT_KIND_LABELS[ch.kind] || 'Select menu';
+  let options = '';
+  if(Number(ch.kind)===3 && Array.isArray(ch.options) && ch.options.length){
+    options = ch.options.map(renderSelectOption).join('');
+  }else{
+    options = `<div class="dh-select-option"><div class="dh-select-option-copy"><div class="dh-select-option-title">${escapeHTML(SELECT_KIND_LABELS[ch.kind]||'Discord options')}</div><div class="dh-select-option-desc">Options are resolved by Discord when the message is sent.</div></div></div>`;
+  }
+  return `<div class="dh-select-wrap" id="${id}"><button type="button" class="dh-select" onclick="togglePreviewSelect(event,'${id}')"><span class="dh-select-label">${label}</span>${chevronIcon()}</button><div class="dh-select-menu" onclick="event.stopPropagation()">${options}</div></div>`;
+}
+
+function renderGalleryUrls(urls){
+  const clean = urls.map(safePreviewUrl).filter(Boolean).slice(0,10);
+  if(!clean.length) return '';
+  const shown = clean.slice(0,4);
+  const countClass = clean.length===1?'count-1':clean.length===2?'count-2':clean.length===3?'count-3':clean.length===4?'count-4':'many';
+  return `<div class="dh-gallery ${countClass}">${shown.map((url,i)=>`<div class="dh-gallery-item"><img class="dh-gallery-image" src="${attr(url)}" alt="" onerror="this.parentElement.remove()">${i===3&&clean.length>4?`<div class="dh-gallery-more">+${clean.length-4}</div>`:''}</div>`).join('')}</div>`;
 }
 
 function renderRawComponent(original){
-  if(!original) return `<div class="hint">Preserved component (details unavailable).</div>`;
-  if(original.type === 1){
-    const items = (original.components || []).map(c => {
-      if(c.type === 2){
-        const emojiHtml = c.emoji ? emojiObjToHtml(c.emoji) + ' ' : '';
-        return `<button class="dc-button style-${c.style||2}">${emojiHtml}${escapeHTML(c.label)||'Button'}</button>`;
-      }
-      if([3,5,6,7,8].includes(c.type)) return `<div class="dc-select"><span>${escapeHTML(c.placeholder || 'Select menu')}</span><span class="sel-caret">▾</span></div>`;
-      return '';
-    }).join('');
-    return `<div class="dc-actionrow" style="align-items:stretch;">${items}</div>`;
+  if(!original) return `<div class="dh-text-display">Preserved component (details unavailable).</div>`;
+  if(original.type===1){
+    const children = original.components||[];
+    if(children.length===1 && [3,5,6,7,8].includes(children[0]?.type)){
+      const c=children[0];
+      return renderSelectMenu({kind:c.type,placeholder:c.placeholder||'',options:(c.options||[]).map(o=>({...o,emoji:emojiObjToShorthand(o.emoji)}))});
+    }
+    return `<div class="dh-action-row">${children.filter(c=>c?.type===2).map(c=>renderPreviewButton({style:c.style,label:c.label,url:c.url,emoji:emojiObjToShorthand(c.emoji)})).join('')}</div>`;
   }
-  return `<div class="hint">Preserved component (type ${original.type}) — no preview available for this type.</div>`;
+  return `<div class="dh-text-display">Preserved component type ${escapeHTML(String(original.type??'?'))}.</div>`;
+}
+
+function renderCV2Child(ch){
+  if(ch.type==='text') return `<div class="dh-text-display md-rich">${renderMarkdown(ch.content)}</div>`;
+  if(ch.type==='separator') return `<hr class="dh-separator">`;
+  if(ch.type==='section'){
+    const thumb=safePreviewUrl(ch.thumbnail_url);
+    return `<div class="dh-section"><div class="dh-section-row"><div class="dh-section-text"><div class="dh-text-display md-rich">${renderMarkdown(ch.content)}</div></div>${thumb?`<img class="dh-section-thumb" src="${attr(thumb)}" alt="" onerror="this.remove()">`:''}</div></div>`;
+  }
+  if(ch.type==='gallery') return renderGalleryUrls((ch.urls_raw||'').split('\n').map(v=>v.trim()).filter(Boolean));
+  if(ch.type==='actionrow') return ch.buttons.length?`<div class="dh-action-row">${ch.buttons.map(renderPreviewButton).join('')}</div>`:'';
+  if(ch.type==='select') return renderSelectMenu(ch);
+  if(ch.type==='raw') return renderRawComponent(ch.original);
+  return '';
 }
 
 function renderCV2Preview(){
-  const wrap = document.getElementById('preview-discord');
-
-  const containersHTML = cv2State.containers.map(c => {
-    const childrenHTML = c.children.map(ch => {
-      if(ch.type==='text') return `<div class="dc-textdisplay md-rich">${renderMarkdown(ch.content)}</div>`;
-      if(ch.type==='separator') return `<div class="dc-separator"></div>`;
-      if(ch.type==='section') return `
-        <div class="dc-section">
-          <div class="dc-textdisplay md-rich">${renderMarkdown(ch.content)}</div>
-          ${ch.thumbnail_url ? `<img class="dc-section-thumb" src="${ch.thumbnail_url}" onerror="this.style.display='none'">` : ''}
-        </div>`;
-      if(ch.type==='gallery'){
-        const urls = (ch.urls_raw||'').split('\n').map(s=>s.trim()).filter(Boolean);
-        if(!urls.length) return '';
-        if(urls.length === 1){
-          return `<img class="dc-gallery-single" src="${urls[0]}" onerror="this.style.display='none'">`;
-        }
-        return `<div class="dc-gallery">${urls.map(u=>`<img src="${u}" onerror="this.style.display='none'">`).join('')}</div>`;
-      }
-      if(ch.type==='actionrow'){
-        if(!ch.buttons.length) return '';
-        return `<div class="dc-actionrow">${ch.buttons.map(b=>`<button class="dc-button style-${b.style}">${b.emoji?renderEmojiShorthand(b.emoji)+' ':''}${escapeHTML(b.label)||'Button'}</button>`).join('')}</div>`;
-      }
-      if(ch.type==='select'){
-        return `<div class="dc-select"><span>${escapeHTML(ch.placeholder) || SELECT_KIND_LABELS[ch.kind]}</span><span class="sel-caret">▾</span></div>`;
-      }
-      if(ch.type==='raw') return renderRawComponent(ch.original);
-      return '';
-    }).join('');
-
-    if(!childrenHTML.trim()) return '';
-    const borderColor = c.color_enabled ? c.accent_color : null;
-    return `<div class="dc-container ${borderColor?'':'no-accent'}" style="${borderColor?`border-left-color:${borderColor}`:''}">${childrenHTML}</div>`;
-  }).join('');
-
-  wrap.innerHTML = `
-    <div class="dc-message">
-      <div class="dc-avatar">🤖</div>
-      <div class="dc-body">
-        <div class="dc-header">
-          <span class="dc-username">Your Bot</span>
-          <span class="dc-bot-tag">BOT</span>
-          <span class="dc-time">${timeNowLabel()}</span>
-        </div>
-        ${containersHTML || `<div class="dc-e-empty">Nothing to preview yet — add a container child on the left.</div>`}
-      </div>
-    </div>
-  `;
+  const wrap=document.getElementById('preview-discord');
+  previewSelectCounter=0;
+  const containers=cv2State.containers.map(c=>{
+    const children=c.children.map(renderCV2Child).filter(Boolean).join('');
+    if(!children.trim()) return '';
+    const accent=c.color_enabled?c.accent_color:'';
+    return `<div class="dh-container ${accent?'has-accent':''}" style="${accent?`--container-accent:${attr(accent)}`:''}">${children}</div>`;
+  }).filter(Boolean).join('');
+  const body=containers?`<div class="dh-components">${containers}</div>`:`<div class="dh-empty">Nothing to preview yet — add a container child on the left.</div>`;
+  wrap.innerHTML=renderMessageShell(body,false);
 }
 
 /* =========================================================================
