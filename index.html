@@ -445,6 +445,16 @@
   .dh-gallery-image{ display:block; width:100%; height:100%; min-height:110px; object-fit:cover; }
   .dh-gallery.count-1 .dh-gallery-image{ width:auto; max-width:100%; max-height:350px; min-height:0; object-fit:contain; border-radius:8px; }
   .dh-gallery-more{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; background:rgba(0,0,0,.56); font-size:28px; font-weight:600; }
+  .dh-spoiler-media{ filter: blur(34px); }
+  .dh-spoiler-tag{
+    position:absolute; top:8px; left:8px; padding:2px 8px; border-radius:4px;
+    background:rgba(0,0,0,.6); color:#fff; font-size:10px; font-weight:700; letter-spacing:.04em;
+  }
+  .dh-file-chip{
+    display:inline-flex; align-items:center; gap:8px; padding:10px 14px;
+    border:1px solid var(--dh-surface-border); border-radius:8px; background:var(--dh-surface);
+    color:var(--dh-text); font-size:13px; width:fit-content; max-width:100%;
+  }
   /* Discord markdown details used by both classic embeds and Components V2. */
   .md-rich{ min-width:0; }
   .md-rich a{ color:var(--dh-link); text-decoration:none; }
@@ -692,10 +702,18 @@ function newEmbed(){
 function newField(){ return { name:'', value:'', inline:false }; }
 let classicState = { content:'', embeds:[ newEmbed() ], buttonRows:[] };
 let activeEmbedIdx = 0;
-function newContainer(){ return { accent_color:'#5865f2', color_enabled:true, children:[] }; }
+function newContainer(){ return { accent_color:'#5865f2', color_enabled:true, spoiler:false, children:[] }; }
 let cv2State = { containers:[ newContainer() ] };
 let activeContainerIdx = 0;
 const SELECT_KIND_LABELS = { 3:'String select', 5:'User select', 6:'Role select', 7:'Mentionable select', 8:'Channel select' };
+/* Discord's channel type enum, restricted to the subset a Channel Select's
+   channel_types filter actually accepts. */
+const CHANNEL_TYPE_LABELS = { 0:'Text', 2:'Voice', 4:'Category', 5:'Announcement', 13:'Stage', 15:'Forum', 16:'Media' };
+/* select kinds whose interaction response carries resolved entities and
+   therefore support a default_values list (pre-selected before the user
+   interacts). String select has no default_values field — its options
+   array carries `default` per-option instead. */
+const SELECT_KINDS_WITH_DEFAULTS = { 5:'user', 6:'role', 7:'mentionable', 8:'channel' };
 /* Mention labels are normally resolved by Discord using guild context. Raw
    message dumps often contain only IDs, so the preview keeps a small lookup
    table populated purely from whatever metadata is present in the pasted
@@ -1111,6 +1129,10 @@ function renderCV2Builder(){
         <input type="text" value="${escapeHTML(c.accent_color)}" oninput="c_upd('accent_color', this.value)" style="flex:1" ${c.color_enabled?'':'disabled'}>
       </div>
       ${colorInvalid ? `<div class="hint" style="color:var(--forge-danger);">Not a valid hex color (expected #rrggbb) — the exported JSON will fall back to Discord blurple until this is fixed.</div>` : ''}
+      <div class="checkbox-row">
+        <input type="checkbox" id="c-spoiler" ${c.spoiler?'checked':''} onchange="c_upd('spoiler', this.checked)">
+        <label for="c-spoiler">Mark whole container as spoiler (blurred until clicked)</label>
+      </div>
       <p class="hint">A Container holds up to 10 children total.</p>
     </div>
     <div class="section-block">
@@ -1122,6 +1144,7 @@ function renderCV2Builder(){
           <button class="btn" style="flex:none;" onclick="addChild('separator')">+ Separator</button>
           <button class="btn" style="flex:none;" onclick="addChild('section')">+ Section</button>
           <button class="btn" style="flex:none;" onclick="addChild('gallery')">+ Gallery</button>
+          <button class="btn" style="flex:none;" onclick="addChild('file')">+ File</button>
           <button class="btn" style="flex:none;" onclick="addChild('actionrow')">+ Buttons</button>
           <button class="btn" style="flex:none;" onclick="addChild('select')">+ Select menu</button>
         </div>
@@ -1155,6 +1178,12 @@ function renderChildEditor(ch, i){
       <textarea oninput="ch_upd(${i},'content',this.value)" placeholder="Section text...">${escapeHTML(ch.content)}</textarea>
       <label class="field-label">Thumbnail image URL</label>
       <input type="url" value="${escapeHTML(ch.thumbnail_url)}" oninput="ch_upd(${i},'thumbnail_url',this.value)" placeholder="https://...">
+      <label class="field-label">Thumbnail alt text (optional)</label>
+      <input type="text" value="${escapeHTML(ch.thumb_description||'')}" oninput="ch_upd(${i},'thumb_description',this.value)" placeholder="Describes the image for screen readers">
+      <div class="checkbox-row">
+        <input type="checkbox" id="thumb-spoiler-${i}" ${ch.thumb_spoiler?'checked':''} onchange="ch_upd(${i},'thumb_spoiler',this.checked)">
+        <label for="thumb-spoiler-${i}">Mark thumbnail as spoiler</label>
+      </div>
     </div>`;
   }
   if(ch.type==='gallery'){
@@ -1162,6 +1191,18 @@ function renderChildEditor(ch, i){
       <label class="field-label" style="margin-top:0;">Image URLs (one per line, up to 10)</label>
       <textarea oninput="ch_upd(${i},'urls_raw',this.value)" placeholder="https://example.com/one.png
 https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
+      <p class="hint">Add an optional alt text and/or mark an item as a spoiler by appending <code>|description|spoiler</code> to its line — e.g. <code>https://example.com/one.png|Screenshot of the bug|spoiler</code>. Both parts after the first <code>|</code> are optional.</p>
+    </div>`;
+  }
+  if(ch.type==='file'){
+    return `<div class="subcard">${head('File')}
+      <label class="field-label" style="margin-top:0;">Attachment filename</label>
+      <input type="text" value="${escapeHTML(ch.filename||'')}" oninput="ch_upd(${i},'filename',this.value)" placeholder="game.zip">
+      <div class="checkbox-row">
+        <input type="checkbox" id="file-spoiler-${i}" ${ch.spoiler?'checked':''} onchange="ch_upd(${i},'spoiler',this.checked)">
+        <label for="file-spoiler-${i}">Mark as spoiler</label>
+      </div>
+      <p class="hint">Discord's File component only references a file you actually uploaded alongside the payload (<code>attachment://filename</code>) — this builder can't upload bytes for you, so exported JSON points at the filename you enter here. Upload the matching file yourself when sending.</p>
     </div>`;
   }
   if(ch.type==='actionrow'){
@@ -1185,7 +1226,7 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
         </div>
       `).join('')}
       ${ch.buttons.length<5 ? `<button class="add-btn" onclick="addButton(${i})">+ Add button</button>` : ''}
-      <p class="hint">Only link buttons actually do anything when clicked — the rest render for layout/preview purposes only.</p>
+      <p class="hint">Only link buttons actually do anything when clicked — the rest render for layout/preview purposes only. Premium (style 6) buttons aren't offered here since they require a real monetization SKU tied to your own Discord app — a static builder can't produce a working one.</p>
     </div>`;
   }
   if(ch.type==='select'){
@@ -1219,10 +1260,30 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
             <input type="text" style="margin-top:8px;" value="${escapeHTML(o.value)}" oninput="selopt_upd(${i},${oi},'value',this.value)" placeholder="Option value (internal)">
             <input type="text" style="margin-top:8px;" value="${escapeHTML(o.description)}" oninput="selopt_upd(${i},${oi},'description',this.value)" placeholder="Description (optional)">
             <input type="text" style="margin-top:8px;" value="${escapeHTML(o.emoji||'')}" oninput="selopt_upd(${i},${oi},'emoji',this.value)" placeholder="Emoji (😀 or <:name:1234567890>)">
+            <div class="checkbox-row">
+              <input type="checkbox" id="opt-default-${i}-${oi}" ${o.default?'checked':''} onchange="selopt_upd(${i},${oi},'default',this.checked)">
+              <label for="opt-default-${i}-${oi}">Selected by default</label>
+            </div>
           </div>
         `).join('')}
         ${ch.options.length<25 ? `<button class="add-btn" onclick="addSelectOption(${i})">+ Add option</button>` : ''}
       ` : `<p class="hint">${SELECT_KIND_LABELS[ch.kind]} pulls its choices live from Discord — no options list needed here.</p>`}
+      ${ch.kind==8 ? `
+        <label class="field-label">Channel types allowed (blank = all types)</label>
+        <div class="row" style="flex-wrap:wrap; gap:6px;">
+          ${Object.entries(CHANNEL_TYPE_LABELS).map(([val,label]) => `
+            <label class="checkbox-row" style="flex:none; padding:6px 9px;">
+              <input type="checkbox" ${(ch.channel_types||[]).includes(+val)?'checked':''} onchange="toggleChannelType(${i}, ${val}, this.checked)">
+              ${label}
+            </label>
+          `).join('')}
+        </div>
+      ` : ''}
+      ${SELECT_KINDS_WITH_DEFAULTS[ch.kind] ? `
+        <label class="field-label">Default value IDs (optional, one per line)</label>
+        <textarea oninput="ch_upd(${i},'default_values_raw',this.value)" placeholder="${ch.kind==7 ? 'user:123456789012345678\nrole:234567890123456789' : '123456789012345678'}">${escapeHTML(ch.default_values_raw||'')}</textarea>
+        <p class="hint">${ch.kind==7 ? 'Mentionable Select needs the type per line since it mixes users and roles — prefix each ID with <code>user:</code> or <code>role:</code>.' : 'Real snowflake IDs for pre-selected ' + SELECT_KINDS_WITH_DEFAULTS[ch.kind] + '(s) — count must fit within min/max values.'}</p>
+      ` : ''}
       <p class="hint">Rendered for layout/preview — selecting an option needs real bot code behind it, same as your Discord bot's JSON importer.</p>
     </div>`;
   }
@@ -1246,12 +1307,20 @@ function addChild(type){
   const c = cv2State.containers[activeContainerIdx];
   let child = { type };
   if(type==='text') child.content = '';
-  if(type==='section'){ child.content=''; child.thumbnail_url=''; }
+  if(type==='section'){ child.content=''; child.thumbnail_url=''; child.thumb_description=''; child.thumb_spoiler=false; }
   if(type==='gallery') child.urls_raw = '';
+  if(type==='file'){ child.filename=''; child.spoiler=false; }
   if(type==='actionrow') child.buttons = [];
-  if(type==='select') Object.assign(child, { kind:3, placeholder:'', min_values:1, max_values:1, options:[] });
+  if(type==='select') Object.assign(child, { kind:3, placeholder:'', min_values:1, max_values:1, options:[], channel_types:[], default_values_raw:'' });
   c.children.push(child);
   renderAll();
+}
+function toggleChannelType(i, typeVal, checked){
+  const ch = cv2State.containers[activeContainerIdx].children[i];
+  const set = new Set(ch.channel_types || []);
+  if(checked) set.add(typeVal); else set.delete(typeVal);
+  ch.channel_types = [...set].sort((a,b)=>a-b);
+  refreshPreviewDebounced();
 }
 /* Named removeCV2Child (not removeChild) — a global `removeChild` shadows
    window.removeChild and can collide with Node.prototype.removeChild calls
@@ -1279,7 +1348,7 @@ function btn_upd(i, bi, key, val){
 function sel_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreviewDebounced(); }
 function sel_updKind(i, val){ cv2State.containers[activeContainerIdx].children[i].kind = parseInt(val); renderAll(); }
 function addSelectOption(i){
-  cv2State.containers[activeContainerIdx].children[i].options.push({label:'', value:'', description:'', emoji:''});
+  cv2State.containers[activeContainerIdx].children[i].options.push({label:'', value:'', description:'', emoji:'', default:false});
   renderAll();
 }
 function removeSelectOption(i, oi){ cv2State.containers[activeContainerIdx].children[i].options.splice(oi,1); renderAll(); }
@@ -1457,12 +1526,22 @@ function renderSelectMenu(ch){
   }
   return `<div class="dh-select-wrap" id="${id}"><button type="button" class="dh-select" onclick="togglePreviewSelect(event,'${id}')"><span class="dh-select-label">${label}</span>${chevronIcon()}</button><div class="dh-select-menu" onclick="event.stopPropagation()">${options}</div></div>`;
 }
-function renderGalleryUrls(urls){
-  const clean = urls.map(safePreviewUrl).filter(Boolean).slice(0,10);
+/* Parses the optional `url|description|spoiler` shorthand used for gallery
+   lines (see the Media Gallery editor hint). Trailing parts are optional. */
+function parseGalleryLine(line){
+  const parts = line.split('|');
+  return {
+    url: (parts[0]||'').trim(),
+    description: (parts[1]||'').trim(),
+    spoiler: (parts[2]||'').trim().toLowerCase() === 'spoiler'
+  };
+}
+function renderGalleryUrls(items){
+  const clean = items.map(it => ({...it, url: safePreviewUrl(it.url)})).filter(it=>it.url).slice(0,10);
   if(!clean.length) return '';
   const shown = clean.slice(0,4);
   const countClass = clean.length===1?'count-1':clean.length===2?'count-2':clean.length===3?'count-3':clean.length===4?'count-4':'many';
-  return `<div class="dh-gallery ${countClass}">${shown.map((url,i)=>`<div class="dh-gallery-item"><img class="dh-gallery-image" src="${attr(url)}" alt="" onerror="this.parentElement.remove()">${i===3&&clean.length>4?`<div class="dh-gallery-more">+${clean.length-4}</div>`:''}</div>`).join('')}</div>`;
+  return `<div class="dh-gallery ${countClass}">${shown.map((it,i)=>`<div class="dh-gallery-item"><img class="dh-gallery-image ${it.spoiler?'dh-spoiler-media':''}" src="${attr(it.url)}" alt="${attr(it.description)}" onerror="this.parentElement.remove()">${it.spoiler?'<div class="dh-spoiler-tag">SPOILER</div>':''}${i===3&&clean.length>4?`<div class="dh-gallery-more">+${clean.length-4}</div>`:''}</div>`).join('')}</div>`;
 }
 function renderRawComponent(original){
   if(!original) return `<div class="dh-text-display">Preserved component (details unavailable).</div>`;
@@ -1481,9 +1560,10 @@ function renderCV2Child(ch){
   if(ch.type==='separator') return `<hr class="dh-separator">`;
   if(ch.type==='section'){
     const thumb=safePreviewUrl(ch.thumbnail_url);
-    return `<div class="dh-section"><div class="dh-section-row"><div class="dh-section-text"><div class="dh-text-display md-rich">${renderMarkdown(ch.content)}</div></div>${thumb?`<img class="dh-section-thumb" src="${attr(thumb)}" alt="" onerror="this.remove()">`:''}</div></div>`;
+    return `<div class="dh-section"><div class="dh-section-row"><div class="dh-section-text"><div class="dh-text-display md-rich">${renderMarkdown(ch.content)}</div></div>${thumb?`<img class="dh-section-thumb ${ch.thumb_spoiler?'dh-spoiler-media':''}" src="${attr(thumb)}" alt="${attr(ch.thumb_description||'')}" onerror="this.remove()">`:''}</div></div>`;
   }
-  if(ch.type==='gallery') return renderGalleryUrls((ch.urls_raw||'').split('\n').map(v=>v.trim()).filter(Boolean));
+  if(ch.type==='gallery') return renderGalleryUrls((ch.urls_raw||'').split('\n').map(v=>v.trim()).filter(Boolean).map(parseGalleryLine));
+  if(ch.type==='file') return `<div class="dh-file-chip ${ch.spoiler?'dh-spoiler-media':''}">📄 ${escapeHTML(ch.filename||'attachment')}${ch.spoiler?' <span class="dh-spoiler-tag" style="position:static; display:inline-block; margin-left:6px;">SPOILER</span>':''}</div>`;
   if(ch.type==='actionrow') return ch.buttons.length?`<div class="dh-action-row">${ch.buttons.map(renderPreviewButton).join('')}</div>`:'';
   if(ch.type==='select') return renderSelectMenu(ch);
   if(ch.type==='raw') return renderRawComponent(ch.original);
@@ -1496,7 +1576,7 @@ function renderCV2Preview(){
     const children=c.children.map(renderCV2Child).filter(Boolean).join('');
     if(!children.trim()) return '';
     const accent=c.color_enabled?(normalizeHex(c.accent_color) || '#5865f2'):'';
-    return `<div class="dh-container ${accent?'has-accent':''}" style="${accent?`--container-accent:${attr(accent)}`:''}">${children}</div>`;
+    return `<div class="dh-container ${accent?'has-accent':''} ${c.spoiler?'dh-spoiler-media':''}" style="${accent?`--container-accent:${attr(accent)}`:''}">${c.spoiler?'<div class="dh-spoiler-tag">SPOILER — click to reveal</div>':''}${children}</div>`;
   }).filter(Boolean).join('');
   const body=containers?`<div class="dh-components">${containers}</div>`:`<div class="dh-empty">Nothing to preview yet — add a container child on the left.</div>`;
   wrap.innerHTML=renderMessageShell(body,false);
@@ -1540,6 +1620,22 @@ function buildClassicJSON(){
   if(rows.length) payload.components = rows;
   return payload;
 }
+/* Parses the "Default value IDs" textarea into Discord's default_values
+   array. Mentionable Select mixes users and roles, so each of its lines is
+   prefixed `user:` or `role:`; the other select kinds are single-type, so
+   each line is just a bare ID. */
+function parseDefaultValues(raw, kind){
+  const lines = (raw||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!lines.length) return undefined;
+  if(kind === 7){
+    return lines.map(line => {
+      const [t, id] = line.split(':').map(s=>s.trim());
+      return (t && id) ? { id, type: t } : null;
+    }).filter(Boolean);
+  }
+  const type = SELECT_KINDS_WITH_DEFAULTS[kind];
+  return lines.map(id => ({ id, type }));
+}
 function buildCV2JSON(){
   const components = cv2State.containers.map(c => {
     const kids = c.children.map(ch => {
@@ -1547,12 +1643,26 @@ function buildCV2JSON(){
       if(ch.type==='separator') return { type:14, divider: ch.divider !== false, spacing: ch.spacing ?? 1 };
       if(ch.type==='section'){
         const sec = { type:9, components:[ { type:10, content: ch.content||'' } ] };
-        if(ch.thumbnail_url) sec.accessory = { type:11, media:{ url: ch.thumbnail_url } };
+        if(ch.thumbnail_url){
+          sec.accessory = { type:11, media:{ url: ch.thumbnail_url } };
+          if(ch.thumb_description) sec.accessory.description = ch.thumb_description;
+          if(ch.thumb_spoiler) sec.accessory.spoiler = true;
+        }
         return sec;
       }
       if(ch.type==='gallery'){
-        const urls = (ch.urls_raw||'').split('\n').map(s=>s.trim()).filter(Boolean);
-        return { type:12, items: urls.map(u=>({ media:{ url:u } })) };
+        const lines = (ch.urls_raw||'').split('\n').map(s=>s.trim()).filter(Boolean).map(parseGalleryLine);
+        return { type:12, items: lines.filter(it=>it.url).map(it=>{
+          const item = { media:{ url:it.url } };
+          if(it.description) item.description = it.description;
+          if(it.spoiler) item.spoiler = true;
+          return item;
+        })};
+      }
+      if(ch.type==='file'){
+        const file = { type:13, file:{ url: `attachment://${ch.filename||'file'}` } };
+        if(ch.spoiler) file.spoiler = true;
+        return file;
       }
       if(ch.type==='actionrow'){
         return { type:1, components: ch.buttons.map(b=>{
@@ -1574,10 +1684,16 @@ function buildCV2JSON(){
             label: o.label || o.value || 'Option', value: o.value || o.label || 'option',
             description: o.description || undefined
           };
+          if(o.default) opt.default = true;
           const emoji = shorthandToEmojiObj(o.emoji);
           if(emoji) opt.emoji = emoji;
           return opt;
         });
+        if(ch.kind === 8 && ch.channel_types && ch.channel_types.length) sel.channel_types = ch.channel_types;
+        if(SELECT_KINDS_WITH_DEFAULTS[ch.kind]){
+          const defaults = parseDefaultValues(ch.default_values_raw, ch.kind);
+          if(defaults && defaults.length) sel.default_values = defaults;
+        }
         return { type:1, components:[sel] };
       }
       if(ch.type==='raw') return ch.original || null;
@@ -1585,6 +1701,7 @@ function buildCV2JSON(){
     }).filter(Boolean);
     const containerObj = { type:17, components: kids };
     if(c.color_enabled) containerObj.accent_color = hexToInt(c.accent_color);
+    if(c.spoiler) containerObj.spoiler = true;
     return containerObj;
   }).filter(c => c.components.length);
   return { flags: 32768, components };
@@ -1686,6 +1803,14 @@ function computeLimitWarnings(){
         }
         if(ch.type === 'select' && ch.kind === 3 && ch.options.length > L.selectOptionsMax){
           warnings.push(`${tag}Select ${chi+1} has ${ch.options.length}/${L.selectOptionsMax} options.`);
+        }
+        if(ch.type === 'select' && SELECT_KINDS_WITH_DEFAULTS[ch.kind]){
+          const dv = parseDefaultValues(ch.default_values_raw, ch.kind);
+          const count = dv ? dv.length : 0;
+          if(count > (ch.max_values ?? 1)) warnings.push(`${tag}Select ${chi+1} has ${count} default value(s) but max_values is ${ch.max_values ?? 1} — Discord will reject this.`);
+        }
+        if(ch.type === 'file' && !ch.filename){
+          warnings.push(`${tag}File ${chi+1} has no filename — export will point at attachment://file, which won't match anything you upload.`);
         }
       });
     });
@@ -1870,13 +1995,27 @@ function parseCV2Child(raw){
     const textParts = (raw.components || []).filter(c=>c && c.type===10).map(c=>c.content ?? '');
     const acc = raw.accessory;
     if(acc && acc.type === 11){
-      return { type:'section', content: textParts.join('\n\n'), thumbnail_url: acc.media?.url ?? '' };
+      return {
+        type:'section', content: textParts.join('\n\n'), thumbnail_url: acc.media?.url ?? '',
+        thumb_description: acc.description ?? '', thumb_spoiler: !!acc.spoiler
+      };
     }
     return { type:'raw', original: cleanComponentNode(raw) };
   }
   if(t === 12){
-    const urls = (raw.items || []).map(it => it.media?.url).filter(Boolean);
-    return { type:'gallery', urls_raw: urls.join('\n') };
+    const lines = (raw.items || []).map(it => {
+      if(!it.media?.url) return null;
+      const parts = [it.media.url];
+      if(it.description || it.spoiler) parts.push(it.description || '');
+      if(it.spoiler) parts.push('spoiler');
+      return parts.join('|');
+    }).filter(Boolean);
+    return { type:'gallery', urls_raw: lines.join('\n') };
+  }
+  if(t === 13){
+    const url = raw.file?.url ?? '';
+    const filename = url.startsWith('attachment://') ? url.slice('attachment://'.length) : url;
+    return { type:'file', filename, spoiler: !!raw.spoiler };
   }
   if(t === 1){
     const kids = raw.components || [];
@@ -1887,13 +2026,19 @@ function parseCV2Child(raw){
         placeholder: s.placeholder ?? '',
         min_values: s.minValues ?? s.min_values ?? 1,
         max_values: s.maxValues ?? s.max_values ?? 1,
-        options: []
+        options: [], channel_types: Array.isArray(s.channel_types) ? s.channel_types : [],
+        default_values_raw: ''
       };
       if(s.type === 3 && Array.isArray(s.options)){
         child.options = s.options.map(o => ({
           label:o.label??'', value:o.value??'', description:o.description??'',
-          emoji: emojiObjToShorthand(o.emoji)
+          emoji: emojiObjToShorthand(o.emoji), default: !!o.default
         }));
+      }
+      if(Array.isArray(s.default_values)){
+        child.default_values_raw = s.default_values.map(dv =>
+          s.type === 7 ? `${dv.type}:${dv.id}` : dv.id
+        ).join('\n');
       }
       return child;
     }
@@ -1914,10 +2059,11 @@ function buildCV2StateFromPayload(parsed){
       containers.push({
         accent_color: resolved || '#5865f2',
         color_enabled: !!resolved,
+        spoiler: !!comp.spoiler,
         children: (comp.components || []).map(parseCV2Child)
       });
     } else if(comp){
-      containers.push({ accent_color:'#5865f2', color_enabled:false, children: [parseCV2Child(comp)] });
+      containers.push({ accent_color:'#5865f2', color_enabled:false, spoiler:false, children: [parseCV2Child(comp)] });
     }
   }
   return { containers: containers.length ? containers : [newContainer()] };
