@@ -2,6 +2,8 @@
 
 A browser-based Discord embed & component builder with a live, pixel-accurate preview. No install, no backend — open the page and start building.
 
+**🌐 [embedbuilder.ushereats.com](https://embedbuilder.ushereats.com/)**
+
 **🔨 Made entirely with AI.**
 
 ---
