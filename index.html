@@ -449,65 +449,605 @@
     .pane-col{ border-right:none; border-bottom:1px solid var(--forge-border); min-height:400px; }
     .pane-col:last-child{ border-bottom:none; }
   }
+
+
+  /* ======================================================================
+     EMBED FORGE — MINIMAL WORKSPACE REDESIGN
+     The preview renderer above remains Discord-accurate; this layer redesigns
+     the surrounding application chrome without changing builder behaviour.
+     ====================================================================== */
+  :root{
+    --forge-bg:#090b10;
+    --forge-panel:#10131a;
+    --forge-panel-raised:#151922;
+    --forge-panel-deep:#0e1118;
+    --forge-surface:#191e28;
+    --forge-surface-hover:#1d2330;
+    --forge-border:#272d39;
+    --forge-border-soft:rgba(255,255,255,.065);
+    --forge-text:#f5f7fb;
+    --forge-text-dim:#929aab;
+    --forge-text-faint:#626b7d;
+    --forge-brass:#8068ff;
+    --forge-brass-bright:#a999ff;
+    --forge-brass-dim:#5d49d2;
+    --forge-accent-soft:rgba(128,104,255,.12);
+    --forge-danger:#ff7088;
+    --forge-ok:#47d7ad;
+    --forge-glow:0 20px 60px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+
+  html,body{
+    min-width:320px;
+    overflow:hidden;
+    background:
+      radial-gradient(900px 600px at 0% -10%, rgba(128,104,255,.10), transparent 58%),
+      radial-gradient(700px 500px at 100% 0%, rgba(61,201,255,.055), transparent 58%),
+      linear-gradient(180deg,#0a0c12 0%,#080a0f 100%);
+    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    letter-spacing:-.01em;
+  }
+
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.22;
+    background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+    background-size:32px 32px;
+    mask-image:linear-gradient(to bottom,black,transparent 75%);
+  }
+
+  ::selection{background:rgba(128,104,255,.42);color:#fff}
+
+  .shell{height:100dvh;min-height:0;position:relative}
+
+  .topbar{
+    min-height:72px;
+    padding:12px 16px;
+    gap:18px;
+    background:rgba(10,12,18,.82);
+    border-bottom:1px solid rgba(255,255,255,.07);
+    box-shadow:none;
+    backdrop-filter:blur(24px) saturate(140%);
+    -webkit-backdrop-filter:blur(24px) saturate(140%);
+  }
+
+  .brand{align-items:center;gap:11px;min-width:max-content}
+  .brand-icon{
+    width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;
+    color:#c7bcff;
+    border:1px solid rgba(169,153,255,.28);
+    border-radius:12px;
+    background:linear-gradient(145deg,rgba(128,104,255,.24),rgba(128,104,255,.07));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 10px 30px rgba(45,31,112,.22);
+  }
+  .brand-icon svg{width:21px;height:21px}
+  .brand-copy{display:flex;flex-direction:column;gap:2px}
+  .brand .mark{
+    font-family:inherit;
+    font-size:15px;
+    line-height:1.1;
+    font-weight:720;
+    letter-spacing:-.025em;
+    color:var(--forge-text);
+    background:none;
+    -webkit-text-fill-color:initial;
+    text-shadow:none;
+  }
+  .brand .tag{
+    font-size:10px;
+    line-height:1.2;
+    font-weight:600;
+    letter-spacing:.08em;
+    color:var(--forge-text-faint);
+    text-transform:uppercase;
+  }
+
+  .mode-switch{
+    height:40px;
+    padding:4px;
+    border-radius:12px;
+    border-color:rgba(255,255,255,.075);
+    background:rgba(255,255,255,.035);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.2);
+  }
+  .mode-switch button{
+    padding:0 15px;
+    border-radius:8px;
+    font-size:12px;
+    letter-spacing:-.005em;
+    color:#7f8798;
+  }
+  .mode-switch button.active{
+    color:#fff;
+    background:#222735;
+    box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 4px 14px rgba(0,0,0,.24);
+  }
+  .mode-switch button:not(.active):hover{color:#c9ced9;background:rgba(255,255,255,.035)}
+
+  .topbar-actions{gap:7px;min-width:0}
+  .template-control{
+    display:flex;align-items:center;gap:8px;height:40px;padding:0 5px 0 12px;
+    border:1px solid rgba(255,255,255,.075);border-radius:11px;background:rgba(255,255,255,.025)
+  }
+  .control-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--forge-text-faint)}
+  .template-select{
+    width:150px;max-width:150px;height:30px;padding:0 28px 0 8px;
+    border:0;border-radius:7px;background:#171b24;color:#dfe3ea;
+    font-size:12px;font-weight:600;box-shadow:none
+  }
+  .action-divider{width:1px;height:24px;margin:0 2px;background:rgba(255,255,255,.09)}
+
+  .btn{
+    min-height:38px;
+    padding:0 13px;
+    gap:7px;
+    border:1px solid rgba(255,255,255,.085);
+    border-radius:10px;
+    background:rgba(255,255,255,.035);
+    color:#dce1ea;
+    font-size:12px;
+    font-weight:650;
+    letter-spacing:-.005em;
+    box-shadow:none;
+    transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease,box-shadow .16s ease;
+  }
+  .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .btn:hover{
+    color:#fff;
+    border-color:rgba(255,255,255,.15);
+    background:rgba(255,255,255,.07);
+    transform:translateY(-1px);
+    box-shadow:0 8px 20px rgba(0,0,0,.18)
+  }
+  .btn:active{transform:translateY(0);box-shadow:none}
+  .btn.primary{
+    color:#fff;
+    border-color:rgba(169,153,255,.4);
+    background:linear-gradient(135deg,#846dff,#7258eb);
+    box-shadow:0 8px 24px rgba(88,64,202,.25),inset 0 1px 0 rgba(255,255,255,.2)
+  }
+  .btn.primary:hover{filter:none;background:linear-gradient(135deg,#927eff,#7c63ef);box-shadow:0 10px 28px rgba(88,64,202,.34)}
+  .btn.danger{color:#ff8ca0}
+  .btn.danger:hover{border-color:rgba(255,112,136,.24);background:rgba(255,112,136,.08)}
+  .btn-icon{width:38px;padding:0;justify-content:center}
+
+  .btn:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+    outline:2px solid rgba(169,153,255,.9);outline-offset:2px
+  }
+
+  .workspace{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:minmax(410px,1.08fr) minmax(380px,.92fr) minmax(430px,1.15fr);
+    gap:12px;
+    padding:12px;
+    overflow:hidden;
+  }
+
+  .pane-col,.builder{
+    border:0;
+    background:transparent;
+  }
+  .pane-col{
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.075);
+    border-radius:16px;
+    background:rgba(16,19,26,.93);
+    box-shadow:0 18px 55px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025)
+  }
+  .pane-col:last-child{border-right:1px solid rgba(255,255,255,.075)}
+  .pane-header{
+    min-height:62px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 15px;
+    flex:0 0 auto;
+    background:rgba(19,23,31,.88);
+    border-bottom:1px solid rgba(255,255,255,.065);
+    color:var(--forge-text);
+    text-transform:none;
+    letter-spacing:normal;
+    backdrop-filter:none;
+  }
+  .pane-heading-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .pane-heading-copy strong{font-size:13px;font-weight:680;letter-spacing:-.015em;color:#edf0f6}
+  .pane-kicker{font-size:9px;line-height:1;font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:#7160d6}
+  .status-pill,.format-badge{
+    display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
+    min-height:24px;padding:0 8px;border:1px solid rgba(255,255,255,.07);border-radius:999px;
+    background:rgba(255,255,255,.025);color:#7f8797;font-size:9.5px;font-weight:650;letter-spacing:.01em
+  }
+  .status-pill i{width:6px;height:6px;border-radius:50%;background:#687184;box-shadow:0 0 0 3px rgba(104,113,132,.10)}
+  .status-pill.live{color:#86dfc4;border-color:rgba(71,215,173,.15);background:rgba(71,215,173,.055)}
+  .status-pill.live i{background:var(--forge-ok);box-shadow:0 0 0 3px rgba(71,215,173,.12),0 0 12px rgba(71,215,173,.45)}
+  .format-badge{font-family:"SFMono-Regular",Consolas,monospace;color:#b8afff;background:rgba(128,104,255,.07);border-color:rgba(128,104,255,.14)}
+
+  .pane-body{min-height:0;background:transparent}
+  .builder-body{overflow-y:auto}
+  .builder{
+    min-height:100%;
+    padding:14px;
+    overflow:visible;
+  }
+
+  .builder::-webkit-scrollbar,.pane-body::-webkit-scrollbar{width:8px;height:8px}
+  .builder::-webkit-scrollbar-track,.pane-body::-webkit-scrollbar-track{background:transparent}
+  .builder::-webkit-scrollbar-thumb,.pane-body::-webkit-scrollbar-thumb{background:#2b313d;border:2px solid transparent;background-clip:padding-box;border-radius:99px}
+  .builder::-webkit-scrollbar-thumb:hover,.pane-body::-webkit-scrollbar-thumb:hover{background:#3b4352;border:2px solid transparent;background-clip:padding-box}
+
+  .section-block{
+    margin-bottom:10px;
+    padding:15px;
+    border:1px solid rgba(255,255,255,.065);
+    border-radius:13px;
+    background:#141821;
+    box-shadow:none;
+    transition:border-color .16s ease,background .16s ease
+  }
+  .section-block:hover{border-color:rgba(128,104,255,.18);background:#151a24}
+  .section-block>.section-title{
+    min-height:20px;
+    margin-bottom:13px;
+    color:#d9dde6;
+    font-size:11px;
+    font-weight:720;
+    letter-spacing:.035em;
+    text-transform:uppercase
+  }
+  .section-title span[style]{color:#70798b!important;font-size:10px!important}
+
+  label.field-label{
+    margin:13px 0 6px;
+    color:#848d9f;
+    font-size:10.5px;
+    font-weight:650;
+    letter-spacing:.015em
+  }
+  label.field-label:first-child{margin-top:0}
+
+  input[type=text],input[type=url],input[type=number],textarea,select{
+    min-height:39px;
+    padding:9px 11px;
+    border:1px solid #2a303c;
+    border-radius:9px;
+    background:#0f1218;
+    color:#ecf0f6;
+    font-size:12px;
+    line-height:1.45;
+    box-shadow:inset 0 1px 1px rgba(0,0,0,.16);
+    transition:border-color .16s ease,background .16s ease,box-shadow .16s ease
+  }
+  textarea{min-height:74px;resize:vertical}
+  input::placeholder,textarea::placeholder{color:#505969}
+  input[type=text]:hover,input[type=url]:hover,input[type=number]:hover,textarea:hover,select:hover{border-color:#363e4d}
+  input[type=text]:focus,input[type=url]:focus,input[type=number]:focus,textarea:focus,select:focus{
+    border-color:#725ee7;
+    background:#11151d;
+    box-shadow:0 0 0 3px rgba(128,104,255,.10)
+  }
+  input:disabled{opacity:.42}
+  select{cursor:pointer}
+
+  .row{gap:8px}
+  .color-row{gap:8px}
+  .color-row input[type=color]{width:39px;height:39px;padding:4px;border:1px solid #2a303c;border-radius:9px;background:#0f1218}
+
+  .toggle-row,.checkbox-row{
+    gap:9px;
+    padding:9px 10px;
+    border:1px solid rgba(255,255,255,.05);
+    border-radius:9px;
+    background:rgba(255,255,255,.018)
+  }
+  .toggle-row{margin:12px 0 8px}
+  .checkbox-row{margin-top:10px}
+  .toggle-row input,.checkbox-row input{width:14px;height:14px;accent-color:#8068ff;flex:0 0 auto}
+  .toggle-row label,.checkbox-row label{font-size:11px;line-height:1.35;color:#b9bfca}
+
+  .subcard{
+    margin-top:8px;
+    padding:11px;
+    border:1px solid rgba(255,255,255,.055);
+    border-radius:10px;
+    background:var(--forge-panel-deep);
+    box-shadow:none
+  }
+  .subcard[style*="background"]{background:var(--forge-panel-deep)!important}
+  .subcard .subcard-head{margin-bottom:9px}
+  .subcard .subcard-head .idx{font-size:9.5px;font-weight:720;letter-spacing:.06em;text-transform:uppercase;color:#687184}
+
+  .icon-btn{
+    min-width:26px;min-height:26px;padding:0 7px;
+    display:inline-grid;place-items:center;
+    border:1px solid transparent;border-radius:7px;
+    color:#667083;font-size:13px
+  }
+  .icon-btn:hover{color:#ff879b;border-color:rgba(255,112,136,.12);background:rgba(255,112,136,.07)}
+  .icon-btn.move:hover{color:#b8afff;border-color:rgba(128,104,255,.14);background:rgba(128,104,255,.08)}
+
+  .add-btn{
+    min-height:38px;
+    margin-top:9px;
+    padding:0 12px;
+    border:1px dashed #343b49;
+    border-radius:10px;
+    background:rgba(255,255,255,.012);
+    color:#788194;
+    font-size:11px;
+    font-weight:650
+  }
+  .add-btn:hover{border-color:#6652d1;color:#b8afff;background:rgba(128,104,255,.055)}
+
+  .embed-tabs,.container-tabs{
+    position:sticky;top:-1px;z-index:4;
+    gap:5px;margin:-1px -1px 10px;padding:6px;
+    border:1px solid rgba(255,255,255,.055);border-radius:11px;
+    background:rgba(14,17,24,.94);backdrop-filter:blur(12px)
+  }
+  .embed-tabs button,.container-tabs button{
+    min-height:31px;padding:0 11px;
+    border:0;border-radius:7px;
+    background:transparent;color:#6f788b;
+    font-size:10.5px;font-weight:650
+  }
+  .embed-tabs button.active,.container-tabs button.active{
+    border:0;color:#fff;background:#282d3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 3px 10px rgba(0,0,0,.18)
+  }
+  .embed-tabs button:not(.active):hover,.container-tabs button:not(.active):hover{border-color:transparent;color:#c6cbd5;background:rgba(255,255,255,.04)}
+
+  .hint{margin-top:7px;color:#667083;font-size:10.5px;line-height:1.55}
+  .hint code{padding:2px 4px;border:1px solid rgba(255,255,255,.055);border-radius:5px;background:#0c0f14;color:#aaa2dc}
+
+  .json-pane{
+    height:100%;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    padding:14px
+  }
+  .json-actions{gap:6px;margin-bottom:10px;align-items:center}
+  .json-actions .btn{min-height:32px;padding:0 10px;font-size:10.5px;border-radius:8px}
+  .copy-flash{margin-left:2px;color:#67dfba;font-size:10px}
+  .import-status{min-height:0;margin-bottom:9px;padding:9px 10px;border:1px solid rgba(255,255,255,.045);border-radius:8px;background:rgba(255,255,255,.018);font-size:10px;line-height:1.45}
+  .import-status.idle{color:#6f7889}
+  .import-status.ok{color:#71dbbc;border-color:rgba(71,215,173,.12);background:rgba(71,215,173,.045)}
+  .import-status.err{color:#ff879b;border-color:rgba(255,112,136,.13);background:rgba(255,112,136,.045)}
+  .limit-warnings .limit-warning{font-size:10px}
+  .json-pane textarea{
+    flex:1 1 auto;
+    min-height:360px;
+    padding:15px;
+    resize:none;
+    border:1px solid #252b36;
+    border-radius:11px;
+    background:#0b0e13;
+    color:#a9e6c2;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    font-size:11px;
+    line-height:1.65;
+    tab-size:2;
+    box-shadow:inset 0 1px 12px rgba(0,0,0,.18)
+  }
+  .json-pane textarea:hover{border-color:#323947}
+  .json-pane textarea:focus{border-color:#6652d1;box-shadow:inset 0 1px 12px rgba(0,0,0,.18),0 0 0 3px rgba(128,104,255,.09)}
+  .json-hint{margin:9px 2px 0}
+
+  .preview-body{overflow:auto;padding:14px;background:#0c0f15}
+  .preview-stage{
+    width:100%;min-width:390px;min-height:100%;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:13px;
+    background:#313338;
+    box-shadow:0 18px 50px rgba(0,0,0,.24)
+  }
+  .preview-chrome{
+    height:40px;
+    display:flex;align-items:center;gap:12px;
+    padding:0 12px;
+    border-bottom:1px solid rgba(0,0,0,.24);
+    background:#282a2f;
+    color:#949ba4;
+    font-family:Inter,ui-sans-serif,sans-serif
+  }
+  .chrome-dots{display:flex;gap:5px}
+  .chrome-dots i{width:7px;height:7px;border-radius:50%;background:#4a4d54}
+  .chrome-dots i:nth-child(1){background:#6d5bd0}
+  .preview-channel{font-size:10px;font-weight:650;color:#aeb3bb}
+  .preview-secure{margin-left:auto;display:grid;place-items:center;color:#727780}
+  .preview-secure svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+  .discord-pane{min-height:calc(100% - 40px);padding:22px 16px 70px;background:#313338}
+
+  @media (max-width:1600px){
+    .workspace{grid-template-columns:minmax(390px,1fr) minmax(350px,.84fr) minmax(390px,1fr)}
+    .brand .tag{display:none}
+    .template-control{padding-left:8px}.control-label{display:none}
+    .template-select{width:135px}
+    .topbar{gap:12px}
+  }
+
+  @media (max-width:1320px){
+    html,body{overflow:auto}
+    .shell{height:auto;min-height:100dvh}
+    .topbar{position:sticky;top:0;z-index:30;flex-wrap:wrap}
+    .topbar-actions{width:100%;order:3;margin-left:0;overflow-x:auto;padding-bottom:1px}
+    .workspace{grid-template-columns:minmax(0,1fr) minmax(0,1fr);overflow:visible}
+    .preview-pane{grid-column:1/-1;min-height:560px}
+    .pane-col{min-height:620px}
+  }
+
+  @media (max-width:820px){
+    .topbar{padding:10px;gap:10px}
+    .brand{margin-right:auto}
+    .mode-switch{order:2}
+    .mode-switch button{padding:0 11px}
+    .topbar-actions{gap:6px}
+    .template-control{min-width:145px}
+    .action-divider{display:none}
+    .workspace{grid-template-columns:1fr;padding:8px;gap:8px}
+    .preview-pane{grid-column:auto}
+    .pane-col{min-height:560px;border-radius:13px}
+    .pane-header{min-height:57px}
+    .row{flex-direction:column}
+    .preview-stage{min-width:350px}
+  }
+
+  @media (max-width:820px){
+    .pane-col{min-height:0;height:auto;overflow:hidden}
+    .pane-body,.builder-body{overflow:visible}
+    .builder{min-height:0;max-height:none;border-bottom:0}
+    .code-pane{min-height:620px}
+    .preview-pane{min-height:560px}
+  }
+
+  @media (max-width:520px){
+    .brand-icon{width:34px;height:34px;border-radius:10px}.brand .mark{font-size:14px}
+    .mode-switch{width:100%;order:3}.mode-switch button{flex:1}
+    .topbar-actions{
+      order:4;
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:6px;
+      width:100%;
+      overflow:visible
+    }
+    .template-control{grid-column:1/-1;width:100%;min-width:0}
+    .template-select{width:100%;max-width:none}
+    .topbar-actions>.btn{width:100%;min-width:0;min-height:36px;padding:0 7px;justify-content:center}
+    .topbar-actions>.btn.primary span{font-size:0}
+    .topbar-actions>.btn.primary span::after{content:"Export";font-size:11px}
+    .workspace{padding:6px}
+    .builder,.json-pane,.preview-body{padding:10px}
+    .section-block{padding:12px}
+    .preview-stage{min-width:320px}
+    .code-pane{min-height:600px}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+  }
+
 </style>
 </head>
 <body>
 
 <div class="shell">
 
-  <div class="topbar">
+  <header class="topbar">
     <div class="brand">
-      <span class="mark">Embed Forge</span>
-      <span class="tag">Discord embed &amp; component builder</span>
+      <span class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M7.25 5.25h9.5A2.75 2.75 0 0 1 19.5 8v8a2.75 2.75 0 0 1-2.75 2.75h-9.5A2.75 2.75 0 0 1 4.5 16V8a2.75 2.75 0 0 1 2.75-2.75Z" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M8 9.25h8M8 12h5.5M8 14.75h6.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand-copy">
+        <span class="mark">Embed Forge</span>
+        <span class="tag">Discord message studio</span>
+      </span>
     </div>
-    <div class="mode-switch" role="tablist" aria-label="Builder mode">
-      <button id="tab-classic" class="active" onclick="setMode('classic')">Classic Embed</button>
+
+    <nav class="mode-switch" role="tablist" aria-label="Builder mode">
+      <button id="tab-classic" class="active" onclick="setMode('classic')">Classic</button>
       <button id="tab-cv2" onclick="setMode('cv2')">Components V2</button>
-    </div>
+    </nav>
+
     <div class="topbar-actions">
-      <select id="template-select" class="template-select" onchange="onTemplateSelectChange(this.value)">
-        <option value="">Load template...</option>
-      </select>
-      <button class="btn" onclick="saveTemplate()">Save as template</button>
-      <button class="btn danger" onclick="deleteSelectedTemplate()" title="Delete the selected template">🗑</button>
-      <button class="btn" onclick="loadSample()">Load sample</button>
+      <div class="template-control">
+        <span class="control-label">Template</span>
+        <select id="template-select" class="template-select" onchange="onTemplateSelectChange(this.value)">
+          <option value="">Select template</option>
+        </select>
+      </div>
+      <button class="btn" onclick="saveTemplate()" title="Save the current design as a reusable template">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3.75h9.5L16.25 6.5v9.75H3.75V3.75H4Z"/><path d="M6.25 3.75v4h6.5v-4M6.25 16.25v-5.5h7.5v5.5"/></svg>
+        <span>Save</span>
+      </button>
+      <button class="btn btn-icon danger" onclick="deleteSelectedTemplate()" title="Delete selected template" aria-label="Delete selected template">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 5.75h11M8 3.75h4M6.25 5.75l.5 10.5h6.5l.5-10.5M8.25 8.25v5.5M11.75 8.25v5.5"/></svg>
+      </button>
+      <span class="action-divider" aria-hidden="true"></span>
+      <button class="btn" onclick="loadSample()">Sample</button>
       <button class="btn danger" onclick="resetAll()">Reset</button>
-      <button class="btn primary" onclick="downloadJSON()">Download JSON</button>
+      <button class="btn primary" onclick="downloadJSON()">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v8.25M6.75 8.75 10 12l3.25-3.25M4 14.25v2h12v-2"/></svg>
+        <span>Export JSON</span>
+      </button>
     </div>
-  </div>
+  </header>
 
-  <div class="workspace">
+  <main class="workspace">
 
-    <div class="builder" id="builder-classic"></div>
-    <div class="builder" id="builder-cv2" style="display:none;"></div>
+    <section class="pane-col editor-pane" aria-label="Builder editor">
+      <div class="pane-header">
+        <div class="pane-heading-copy">
+          <span class="pane-kicker">Compose</span>
+          <strong>Message builder</strong>
+        </div>
+        <span class="status-pill"><i></i> Autosaved locally</span>
+      </div>
+      <div class="pane-body builder-body">
+        <div class="builder" id="builder-classic"></div>
+        <div class="builder" id="builder-cv2" style="display:none;"></div>
+      </div>
+    </section>
 
-    <div class="pane-col">
-      <div class="pane-header">JSON output</div>
+    <section class="pane-col code-pane" aria-label="JSON editor">
+      <div class="pane-header">
+        <div class="pane-heading-copy">
+          <span class="pane-kicker">Payload</span>
+          <strong>JSON editor</strong>
+        </div>
+        <span class="format-badge">JSON</span>
+      </div>
       <div class="pane-body">
         <div class="json-pane">
           <div class="json-actions">
-            <button class="btn" onclick="copyJSON()">Copy JSON</button>
-            <button class="btn" onclick="downloadJSON()">Download .json</button>
-            <span class="copy-flash" id="copy-flash">Copied!</span>
+            <button class="btn" onclick="copyJSON()">Copy</button>
+            <button class="btn" onclick="downloadJSON()">Download</button>
+            <span class="copy-flash" id="copy-flash">Copied</span>
           </div>
-          <div id="import-status" class="import-status idle">Edit or paste JSON below — it builds and previews automatically as you type (after a short pause).</div>
+          <div id="import-status" class="import-status idle">Paste or edit JSON. The builder and preview update automatically.</div>
           <div id="limit-warnings" class="limit-warnings"></div>
-          <textarea id="json-output" spellcheck="false" oninput="onJSONTextareaInput()"></textarea>
-          <p class="hint">Works with clean JSON (<code>{content, embed/embeds}</code> or <code>{flags:32768, components}</code>) or a raw dump copied straight out of the Discord client — both get normalized automatically into whatever your bot's <code>/embed</code> command accepts.</p>
+          <textarea id="json-output" spellcheck="false" oninput="onJSONTextareaInput()" aria-label="JSON output and editor"></textarea>
+          <p class="hint json-hint">Accepts clean bot payloads or raw Discord client dumps and normalizes them automatically.</p>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="pane-col">
-      <div class="pane-header">Preview</div>
-      <div class="pane-body">
-        <div class="discord-pane" id="preview-discord"></div>
+    <section class="pane-col preview-pane" aria-label="Discord preview">
+      <div class="pane-header">
+        <div class="pane-heading-copy">
+          <span class="pane-kicker">Render</span>
+          <strong>Live preview</strong>
+        </div>
+        <span class="status-pill live"><i></i> Live</span>
       </div>
-    </div>
+      <div class="pane-body preview-body">
+        <div class="preview-stage">
+          <div class="preview-chrome" aria-hidden="true">
+            <span class="chrome-dots"><i></i><i></i><i></i></span>
+            <span class="preview-channel"># embed-preview</span>
+            <span class="preview-secure">
+              <svg viewBox="0 0 20 20"><path d="M6.5 8V6.25a3.5 3.5 0 0 1 7 0V8M5.25 8h9.5v8h-9.5V8Z"/></svg>
+            </span>
+          </div>
+          <div class="discord-pane" id="preview-discord"></div>
+        </div>
+      </div>
+    </section>
 
-  </div>
+  </main>
 </div>
-
 <script>
 /* =========================================================================
    STATE
@@ -904,7 +1444,7 @@ function renderClassicBuilder(){
             <button class="icon-btn" onclick="removeButtonRow(${ri})">✕</button>
           </div>
           ${row.map((b, bi) => `
-            <div class="subcard" style="background:#1b1d27;">
+            <div class="subcard" style="background:var(--forge-panel-deep);">
               <div class="subcard-head">
                 <span class="idx">Button ${bi+1}</span>
                 <button class="icon-btn" onclick="removeLegacyButton(${ri},${bi})">✕</button>
@@ -1039,7 +1579,7 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
   if(ch.type==='actionrow'){
     return `<div class="subcard">${head('Button row')}
       ${ch.buttons.map((b,bi)=>`
-        <div class="subcard" style="background:#1b1d27;">
+        <div class="subcard" style="background:var(--forge-panel-deep);">
           <div class="subcard-head">
             <span class="idx">Button ${bi+1}</span>
             <button class="icon-btn" onclick="removeButton(${i},${bi})">✕</button>
@@ -1085,7 +1625,7 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
       ${ch.kind==3 ? `
         <div class="section-title" style="margin-top:14px;">Options <span style="color:var(--forge-text-dim); font-weight:600;">${ch.options.length}/25</span></div>
         ${ch.options.map((o,oi)=>`
-          <div class="subcard" style="background:#1b1d27;">
+          <div class="subcard" style="background:var(--forge-panel-deep);">
             <div class="subcard-head">
               <span class="idx">Option ${oi+1}</span>
               <button class="icon-btn" onclick="removeSelectOption(${i},${oi})">✕</button>
