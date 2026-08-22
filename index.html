@@ -13,21 +13,30 @@
 <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 <title>Embed Forge — Discord Embed &amp; Component Builder</title>
 <style>
+  /* ======================================================================
+     EMBED FORGE — MINIMAL WORKSPACE REDESIGN
+     The preview renderer above remains Discord-accurate; this layer redesigns
+     the surrounding application chrome without changing builder behaviour.
+     ====================================================================== */
   :root{
-    --forge-bg: #08090d;
-    --forge-panel: #14151d;
-    --forge-panel-raised: #1a1c26;
-    --forge-border: #262836;
-    --forge-border-soft: rgba(255,255,255,.055);
-    --forge-text: #f2f3f8;
-    --forge-text-dim: #8d90a3;
-    --forge-brass: #e8b768;
-    --forge-brass-bright: #f8d48f;
-    --forge-brass-dim: #7a5a26;
-    --forge-danger: #f2666b;
-    --forge-ok: #55d492;
-    --forge-glow: 0 0 1px rgba(232,183,104,.4), 0 8px 24px rgba(0,0,0,.35);
-
+    --forge-bg:#090b10;
+    --forge-panel:#10131a;
+    --forge-panel-raised:#151922;
+    --forge-panel-deep:#0e1118;
+    --forge-surface:#191e28;
+    --forge-surface-hover:#1d2330;
+    --forge-border:#272d39;
+    --forge-border-soft:rgba(255,255,255,.065);
+    --forge-text:#f5f7fb;
+    --forge-text-dim:#929aab;
+    --forge-text-faint:#626b7d;
+    --forge-brass:#8068ff;
+    --forge-brass-bright:#a999ff;
+    --forge-brass-dim:#5d49d2;
+    --forge-accent-soft:rgba(128,104,255,.12);
+    --forge-danger:#ff7088;
+    --forge-ok:#47d7ad;
+    --forge-glow:0 20px 60px rgba(0,0,0,.35);
     --dc-chat-bg: #313338;
     --dc-card-bg: #393a41;
     --dc-card-border: #1e1f22;
@@ -35,203 +44,248 @@
     --dc-text-muted: #949ba4;
     --dc-text-link: #00a8fc;
     --dc-blurple: #5865f2;
+    color-scheme:dark;
   }
-
   *{ box-sizing: border-box; }
-
-  html, body{
+  html,body{
     margin:0; padding:0; height:100%;
+    min-width:320px;
+    overflow:hidden;
     background:
-      radial-gradient(1100px 480px at 18% -8%, rgba(232,183,104,.09), transparent 60%),
-      radial-gradient(900px 400px at 100% 0%, rgba(88,101,242,.05), transparent 55%),
-      var(--forge-bg);
+      radial-gradient(900px 600px at 0% -10%, rgba(128,104,255,.10), transparent 58%),
+      radial-gradient(700px 500px at 100% 0%, rgba(61,201,255,.055), transparent 58%),
+      linear-gradient(180deg,#0a0c12 0%,#080a0f 100%);
     color: var(--forge-text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing: antialiased;
+    letter-spacing:-.01em;
   }
-
-  ::selection{ background: var(--forge-brass); color:#14151c; }
-
-  .shell{ display:flex; flex-direction:column; height:100vh; }
-
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.22;
+    background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+    background-size:32px 32px;
+    mask-image:linear-gradient(to bottom,black,transparent 75%);
+  }
+  ::selection{background:rgba(128,104,255,.42);color:#fff}
+  .shell{ display:flex; flex-direction:column; height:100dvh; min-height:0; position:relative; }
   .topbar{
-    display:flex; align-items:center; gap:16px;
-    padding: 15px 24px;
-    background: rgba(20,21,29,.82);
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
-    border-bottom: 1px solid var(--forge-border-soft);
-    box-shadow: 0 1px 0 rgba(0,0,0,.4);
+    display:flex; align-items:center; gap:18px;
+    min-height:72px;
+    padding: 12px 16px;
+    background:rgba(10,12,18,.82);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border-bottom: 1px solid rgba(255,255,255,.07);
     flex-shrink:0; position:relative; z-index:2;
   }
-  .brand{ display:flex; align-items:baseline; gap:10px; }
-  .brand .mark{
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 21px; font-weight:700; letter-spacing:.3px;
-    background: linear-gradient(135deg, var(--forge-brass-bright), var(--forge-brass) 60%, #b8863f);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    text-shadow: 0 0 30px rgba(232,183,104,.25);
+  .brand{ display:flex; align-items:center; gap:11px; min-width:max-content; }
+  .brand-icon{
+    width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;
+    color:#c7bcff;
+    border:1px solid rgba(169,153,255,.28);
+    border-radius:12px;
+    background:linear-gradient(145deg,rgba(128,104,255,.24),rgba(128,104,255,.07));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 10px 30px rgba(45,31,112,.22);
   }
-  .brand .tag{ font-size:12px; color:var(--forge-text-dim); letter-spacing:.06em; text-transform:uppercase; }
-
+  .brand-icon svg{width:21px;height:21px}
+  .brand-copy{display:flex;flex-direction:column;gap:2px}
+  .brand .mark{
+    font-family: inherit;
+    font-size: 15px; line-height:1.1; font-weight:720; letter-spacing:-.025em;
+    color: var(--forge-text);
+  }
+  .brand .tag{ font-size:10px; line-height:1.2; font-weight:600; color:var(--forge-text-faint); letter-spacing:.08em; text-transform:uppercase; }
   .mode-switch{
-    display:flex; background: rgba(255,255,255,.02);
-    border:1px solid var(--forge-border-soft); border-radius:10px; padding:3px; gap:2px;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.3);
+    display:flex; height:40px; background: rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.075); border-radius:12px; padding:4px; gap:2px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.2);
   }
   .mode-switch button{
-    border:none; background:transparent; color:var(--forge-text-dim);
-    padding:7px 17px; border-radius:7px; font-size:13px; font-weight:600;
-    cursor:pointer; transition: all .2s cubic-bezier(.4,0,.2,1);
+    border:none; background:transparent; color:#7f8798;
+    padding:0 15px; border-radius:8px; font-size:12px; font-weight:600;
+    letter-spacing:-.005em;
+    cursor:pointer; transition: all .16s cubic-bezier(.4,0,.2,1);
   }
   .mode-switch button.active{
-    background: linear-gradient(160deg, var(--forge-brass-bright), var(--forge-brass));
-    color:#1a1300; box-shadow: 0 2px 12px rgba(232,183,104,.35), 0 0 0 1px rgba(232,183,104,.5) inset;
+    color:#fff; background:#222735;
+    box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 4px 14px rgba(0,0,0,.24);
   }
-  .mode-switch button:not(.active):hover{ color:var(--forge-text); background: rgba(255,255,255,.04); }
-
-  .topbar-actions{ margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .mode-switch button:not(.active):hover{ color:#c9ced9; background: rgba(255,255,255,.035); }
+  .topbar-actions{ margin-left:auto; display:flex; gap:7px; align-items:center; min-width:0; }
+  .template-control{
+    display:flex;align-items:center;gap:8px;height:40px;padding:0 5px 0 12px;
+    border:1px solid rgba(255,255,255,.075);border-radius:11px;background:rgba(255,255,255,.025)
+  }
+  .control-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--forge-text-faint)}
   .template-select{
-    background: var(--forge-panel-raised); border:1px solid var(--forge-border);
-    color: var(--forge-text); padding:8px 10px; border-radius:8px;
-    font-size:13px; font-weight:600; cursor:pointer; max-width:180px;
+    width:150px; max-width:150px; height:30px; padding: 0 28px 0 8px;
+    background: #171b24; border:0; border-radius:7px;
+    color: #dfe3ea; font-size:12px; font-weight:600; cursor:pointer;
   }
+  .action-divider{width:1px;height:24px;margin:0 2px;background:rgba(255,255,255,.09)}
   .btn{
-    border:1px solid var(--forge-border); background: var(--forge-panel-raised);
-    color: var(--forge-text); padding:8px 15px; border-radius:8px;
-    font-size:13px; font-weight:600; cursor:pointer;
-    transition: transform .15s cubic-bezier(.4,0,.2,1), box-shadow .15s ease, border-color .15s ease, background .15s ease;
-    display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+    border:1px solid rgba(255,255,255,.085); background: rgba(255,255,255,.035);
+    color: #dce1ea; min-height:38px; padding:0 13px; border-radius:10px;
+    font-size:12px; font-weight:650; letter-spacing:-.005em; cursor:pointer;
+    transition: transform .16s cubic-bezier(.4,0,.2,1), box-shadow .16s ease, border-color .16s ease, background .16s ease, color .16s ease;
+    display:inline-flex; align-items:center; gap:7px; white-space:nowrap;
   }
-  .btn:hover{ border-color: var(--forge-brass-dim); background:#20222e; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
-  .btn:active{ transform: translateY(0); }
+  .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .btn:hover{ color:#fff; border-color: rgba(255,255,255,.15); background:rgba(255,255,255,.07); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+  .btn:active{ transform: translateY(0); box-shadow:none; }
   .btn.primary{
-    background: linear-gradient(160deg, var(--forge-brass-bright), var(--forge-brass));
-    border-color: transparent; color:#1a1300;
-    box-shadow: 0 2px 14px rgba(232,183,104,.3);
+    color:#fff; border-color: rgba(169,153,255,.4);
+    background: linear-gradient(135deg,#846dff,#7258eb);
+    box-shadow: 0 8px 24px rgba(88,64,202,.25), inset 0 1px 0 rgba(255,255,255,.2);
   }
-  .btn.primary:hover{ filter:brightness(1.06); box-shadow: 0 4px 20px rgba(232,183,104,.45); }
-  .btn.danger{ color: var(--forge-danger); }
+  .btn.primary:hover{ filter:none; background:linear-gradient(135deg,#927eff,#7c63ef); box-shadow: 0 10px 28px rgba(88,64,202,.34); }
+  .btn.danger{ color: #ff8ca0; }
+  .btn.danger:hover{ border-color:rgba(255,112,136,.24); background:rgba(255,112,136,.08); }
+  .btn-icon{width:38px;padding:0;justify-content:center}
   .btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
-    outline: 2px solid var(--forge-brass); outline-offset:2px;
+    outline: 2px solid rgba(169,153,255,.9); outline-offset:2px;
   }
-
-  .workspace{ flex:1; display:grid; grid-template-columns: 650px 650px 1fr; min-height:0; }
-
+  .workspace{
+    flex:1; min-height:0; display:grid;
+    grid-template-columns:minmax(410px,1.08fr) minmax(380px,.92fr) minmax(430px,1.15fr);
+    gap:12px; padding:12px; overflow:hidden;
+  }
   .builder{
-    background: var(--forge-panel);
-    border-right:1px solid var(--forge-border-soft);
-    overflow-y:auto; padding:22px;
+    background: transparent;
+    min-height:100%;
+    padding:14px;
+    overflow:visible;
   }
-  .builder::-webkit-scrollbar, .pane-col::-webkit-scrollbar{ width:10px; }
-  .builder::-webkit-scrollbar-thumb, .pane-col::-webkit-scrollbar-thumb{
-    background: var(--forge-border); border-radius:6px;
+  .builder::-webkit-scrollbar, .pane-body::-webkit-scrollbar{ width:8px; height:8px; }
+  .builder::-webkit-scrollbar-track, .pane-body::-webkit-scrollbar-track{ background:transparent; }
+  .builder::-webkit-scrollbar-thumb, .pane-body::-webkit-scrollbar-thumb{
+    background: #2b313d; border:2px solid transparent; background-clip:padding-box; border-radius:99px;
   }
-  .builder::-webkit-scrollbar-thumb:hover, .pane-col::-webkit-scrollbar-thumb:hover{ background: var(--forge-brass-dim); }
-
+  .builder::-webkit-scrollbar-thumb:hover, .pane-body::-webkit-scrollbar-thumb:hover{ background: #3b4352; border:2px solid transparent; background-clip:padding-box; }
   .section-block{
-    background: linear-gradient(180deg, rgba(255,255,255,.025), transparent 40%), var(--forge-panel-raised);
-    border:1px solid var(--forge-border-soft);
-    border-radius:12px; padding:17px; margin-bottom:14px;
-    box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 6px 20px rgba(0,0,0,.18);
-    transition: border-color .2s ease;
+    background: #141821;
+    border:1px solid rgba(255,255,255,.065);
+    border-radius:13px; padding:15px; margin-bottom:10px;
+    box-shadow:none;
+    transition: border-color .16s ease, background .16s ease;
   }
-  .section-block:hover{ border-color: rgba(232,183,104,.18); }
+  .section-block:hover{ border-color: rgba(128,104,255,.18); background:#151a24; }
   .section-block > .section-title{
     display:flex; align-items:center; justify-content:space-between;
-    font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
-    color: var(--forge-brass); margin-bottom:12px;
+    min-height:20px; margin-bottom:13px;
+    font-size:11px; font-weight:720; letter-spacing:.035em; text-transform:uppercase;
+    color: #d9dde6;
   }
-
+  .section-title span[style]{color:#70798b!important;font-size:10px!important}
   label.field-label{
-    display:block; font-size:12px; font-weight:600; color:var(--forge-text-dim);
-    margin: 12px 0 5px;
+    display:block; font-size:10.5px; font-weight:650; color:#848d9f;
+    letter-spacing:.015em;
+    margin: 13px 0 6px;
   }
   label.field-label:first-child{ margin-top:0; }
-
   input[type=text], input[type=url], input[type=number], textarea, select{
-    width:100%; background:rgba(0,0,0,.28); border:1px solid var(--forge-border);
-    color: var(--forge-text); border-radius:7px; padding:9px 11px;
-    font-size:13px; font-family: inherit; resize:vertical;
-    transition: border-color .15s ease, box-shadow .15s ease;
+    width:100%; background:#0f1218; border:1px solid #2a303c;
+    color: #ecf0f6; border-radius:9px; padding:9px 11px;
+    min-height:39px;
+    font-size:12px; line-height:1.45; font-family: inherit; resize:vertical;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.16);
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
   }
+  textarea{ min-height:74px; }
+  input::placeholder, textarea::placeholder{ color:#505969; }
+  input[type=text]:hover, input[type=url]:hover, input[type=number]:hover, textarea:hover, select:hover{ border-color:#363e4d; }
   input[type=text]:focus, input[type=url]:focus, input[type=number]:focus, textarea:focus, select:focus{
-    border-color: var(--forge-brass-dim); box-shadow: 0 0 0 3px rgba(232,183,104,.1);
+    border-color: #725ee7; background:#11151d; box-shadow: 0 0 0 3px rgba(128,104,255,.10);
   }
-  textarea{ min-height:64px; line-height:1.45; }
-  input::placeholder, textarea::placeholder{ color:#565968; }
-  input:disabled{ opacity:.4; cursor:not-allowed; }
-
-  .row{ display:flex; gap:10px; }
+  select{ cursor:pointer; }
+  input:disabled{ opacity:.42; cursor:not-allowed; }
+  .row{ display:flex; gap:8px; }
   .row > *{ flex:1; min-width:0; }
-
   .color-row{ display:flex; gap:8px; align-items:center; }
   .color-row input[type=color]{
-    width:38px; height:34px; padding:2px; border-radius:8px; border:1px solid var(--forge-border);
-    background:rgba(0,0,0,.28); cursor:pointer; flex-shrink:0;
+    width:39px; height:39px; padding:4px; border-radius:9px; border:1px solid #2a303c;
+    background:#0f1218; cursor:pointer; flex-shrink:0;
   }
-
-  .toggle-row{ display:flex; align-items:center; gap:8px; margin:10px 0; }
-  .toggle-row input{ width:15px; height:15px; accent-color: var(--forge-brass); cursor:pointer; }
-  .toggle-row label{ font-size:12.5px; color: var(--forge-text); cursor:pointer; }
-
-  .checkbox-row{ display:flex; align-items:center; gap:8px; margin-top:12px; }
-  .checkbox-row input{ width:15px; height:15px; accent-color: var(--forge-brass); }
-  .checkbox-row label{ font-size:13px; color: var(--forge-text); }
-
+  .toggle-row{ display:flex; align-items:center; gap:9px; margin:12px 0 8px; padding:9px 10px; border:1px solid rgba(255,255,255,.05); border-radius:9px; background:rgba(255,255,255,.018); }
+  .toggle-row input{ width:14px; height:14px; accent-color: #8068ff; cursor:pointer; flex:0 0 auto; }
+  .toggle-row label{ font-size:11px; line-height:1.35; color: #b9bfca; cursor:pointer; }
+  .checkbox-row{ display:flex; align-items:center; gap:9px; margin-top:10px; padding:9px 10px; border:1px solid rgba(255,255,255,.05); border-radius:9px; background:rgba(255,255,255,.018); }
+  .checkbox-row input{ width:14px; height:14px; accent-color: #8068ff; flex:0 0 auto; }
+  .checkbox-row label{ font-size:11px; color: #b9bfca; }
   .subcard{
-    background:rgba(0,0,0,.22); border:1px solid var(--forge-border-soft); border-radius:9px;
-    padding:12px; margin-top:10px; position:relative;
+    background:var(--forge-panel-deep); border:1px solid rgba(255,255,255,.055); border-radius:10px;
+    padding:11px; margin-top:8px; position:relative;
   }
   .subcard .subcard-head{
-    display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:9px;
   }
-  .subcard .subcard-head .idx{ font-size:11px; color:var(--forge-text-dim); font-weight:700; }
+  .subcard .subcard-head .idx{ font-size:9.5px; color:#687184; font-weight:720; letter-spacing:.06em; text-transform:uppercase; }
   .icon-btn{
-    background:none; border:none; color: var(--forge-text-dim); cursor:pointer;
-    font-size:14px; padding:2px 6px; border-radius:5px; line-height:1;
+    background:none; border:1px solid transparent; color: #667083; cursor:pointer;
+    min-width:26px; min-height:26px; display:inline-grid; place-items:center;
+    font-size:13px; padding:0 7px; border-radius:7px; line-height:1;
     transition: all .15s ease;
   }
-  .icon-btn:hover{ color: var(--forge-danger); background:rgba(242,102,107,.12); }
-  .icon-btn.move:hover{ color: var(--forge-brass); background:rgba(232,183,104,.12); }
-
+  .icon-btn:hover{ color: #ff879b; background:rgba(255,112,136,.07); border-color:rgba(255,112,136,.12); }
+  .icon-btn.move:hover{ color: #b8afff; background:rgba(128,104,255,.08); border-color:rgba(128,104,255,.14); }
   .add-btn{
-    width:100%; margin-top:10px; padding:9px; border-radius:8px;
-    border:1px dashed var(--forge-border); background:transparent;
-    color: var(--forge-text-dim); font-size:13px; font-weight:600; cursor:pointer;
+    width:100%; margin-top:9px; padding:0 12px; min-height:38px; border-radius:10px;
+    border:1px dashed #343b49; background:rgba(255,255,255,.012);
+    color: #788194; font-size:11px; font-weight:650; cursor:pointer;
     transition: all .15s ease;
   }
-  .add-btn:hover{ border-color: var(--forge-brass); color: var(--forge-brass); background: rgba(232,183,104,.05); }
-
-  .embed-tabs, .container-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .add-btn:hover{ border-color: #6652d1; color: #b8afff; background: rgba(128,104,255,.055); }
+  .embed-tabs, .container-tabs{
+    position:sticky; top:-1px; z-index:4;
+    display:flex; gap:5px; flex-wrap:wrap; margin:-1px -1px 10px; padding:6px;
+    border:1px solid rgba(255,255,255,.055); border-radius:11px;
+    background:rgba(14,17,24,.94); backdrop-filter:blur(12px);
+  }
   .embed-tabs button, .container-tabs button{
-    padding:6px 13px; border-radius:8px; border:1px solid var(--forge-border);
-    background:rgba(0,0,0,.22); color:var(--forge-text-dim); font-size:12px; font-weight:600; cursor:pointer;
+    min-height:31px; padding:0 11px; border-radius:7px; border:0;
+    background:transparent; color:#6f788b; font-size:10.5px; font-weight:650; cursor:pointer;
     transition: all .15s ease;
   }
   .embed-tabs button.active, .container-tabs button.active{
-    background: linear-gradient(160deg, var(--forge-brass-bright), var(--forge-brass));
-    border-color:transparent; color:#1a1300;
-    box-shadow: 0 2px 10px rgba(232,183,104,.3);
+    background: #282d3a; color:#fff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 3px 10px rgba(0,0,0,.18);
   }
-  .embed-tabs button:not(.active):hover, .container-tabs button:not(.active):hover{ border-color: var(--forge-brass-dim); color: var(--forge-text); }
-
-  .hint{ font-size:11.5px; color: var(--forge-text-dim); margin-top:6px; line-height:1.5; }
-
-  .pane-col{ display:flex; flex-direction:column; min-height:0; border-right:1px solid var(--forge-border-soft); }
-  .pane-col:last-child{ border-right:none; }
+  .embed-tabs button:not(.active):hover, .container-tabs button:not(.active):hover{ color: #c6cbd5; background: rgba(255,255,255,.04); }
+  .hint{ font-size:10.5px; color: #667083; margin-top:7px; line-height:1.55; }
+  .hint code{ padding:2px 4px; border:1px solid rgba(255,255,255,.055); border-radius:5px; background:#0c0f14; color:#aaa2dc; }
+  .pane-col{
+    display:flex; flex-direction:column; min-height:0; min-width:0;
+    border:1px solid rgba(255,255,255,.075); border-radius:16px;
+    background:rgba(16,19,26,.93);
+    box-shadow:0 18px 55px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.025);
+    overflow:hidden;
+  }
   .pane-header{
-    padding:13px 20px; background: rgba(20,21,29,.6);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    min-height:62px;
+    padding:12px 15px; background: rgba(19,23,31,.88);
     flex-shrink:0;
-    font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
-    color: var(--forge-brass); border-bottom:1px solid var(--forge-border-soft);
+    font-size:11px; font-weight:680; letter-spacing:-.015em;
+    color: var(--forge-text); border-bottom:1px solid rgba(255,255,255,.065);
   }
-  .pane-body{ flex:1; overflow-y:auto; min-height:0; }
-  .pane-body::-webkit-scrollbar{ width:10px; }
-  .pane-body::-webkit-scrollbar-thumb{ background: var(--forge-border); border-radius:6px; }
-  .pane-body::-webkit-scrollbar-thumb:hover{ background: var(--forge-brass-dim); }
-
+  .pane-heading-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .pane-heading-copy strong{font-size:13px;font-weight:680;letter-spacing:-.015em;color:#edf0f6}
+  .pane-kicker{font-size:9px;line-height:1;font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:#7160d6}
+  .status-pill,.format-badge{
+    display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
+    min-height:24px;padding:0 8px;border:1px solid rgba(255,255,255,.07);border-radius:999px;
+    background:rgba(255,255,255,.025);color:#7f8797;font-size:9.5px;font-weight:650;letter-spacing:.01em
+  }
+  .status-pill i{width:6px;height:6px;border-radius:50%;background:#687184;box-shadow:0 0 0 3px rgba(104,113,132,.10)}
+  .status-pill.live{color:#86dfc4;border-color:rgba(71,215,173,.15);background:rgba(71,215,173,.055)}
+  .status-pill.live i{background:var(--forge-ok);box-shadow:0 0 0 3px rgba(71,215,173,.12),0 0 12px rgba(71,215,173,.45)}
+  .format-badge{font-family:"SFMono-Regular",Consolas,monospace;color:#b8afff;background:rgba(128,104,255,.07);border-color:rgba(128,104,255,.14)}
+  .pane-body{ flex:1; overflow-y:auto; min-height:0; background:transparent; }
+  .builder-body{ overflow-y:auto; }
   /* ======================================================================
      DISCOHOOK-STYLE DISCORD PREVIEW
      Structure and measurements are adapted from Discohook's AGPL-3.0
@@ -247,7 +301,7 @@
     --dh-muted:#949ba4;
     --dh-link:#00a8fc;
     --dh-blurple:#5865f2;
-    background:var(--dh-chat); min-height:100%; padding:24px 16px 64px;
+    background:var(--dh-chat); min-height:calc(100% - 40px); padding:22px 16px 70px;
     color:var(--dh-text);
     font-family:"gg sans","Noto Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
     font-size:16px; line-height:1.375; text-rendering:optimizeLegibility;
@@ -281,7 +335,6 @@
     max-width:520px; margin-top:8px; padding:12px; border:1px dashed #4a4c54;
     border-radius:8px; color:var(--dh-muted); font-size:13px; text-align:center;
   }
-
   .dh-embed-stack{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin-top:4px; }
   .dh-embed{
     --embed-accent:#4a4a50;
@@ -322,7 +375,6 @@
   .dh-embed-footer{ display:flex; align-items:center; min-width:0; margin-top:8px; color:var(--dh-text); font-size:12px; line-height:16px; font-weight:500; }
   .dh-embed-footer-icon{ width:20px; height:20px; margin-right:8px; border-radius:50%; object-fit:contain; flex:none; }
   .dh-embed-footer-text{ white-space:pre-wrap; overflow-wrap:anywhere; }
-
   .dh-components{ display:flex; flex-direction:column; align-items:stretch; width:fit-content; max-width:min(600px,100%); gap:6px; margin-top:2px; overflow:hidden; }
   .dh-container{
     --container-accent:transparent;
@@ -343,7 +395,6 @@
     width:85px; height:85px; max-width:85px; max-height:85px; flex:0 0 85px;
     border-radius:8px; overflow:hidden; object-fit:cover; background:#1e1f22;
   }
-
   .dh-action-row{ display:flex; flex-wrap:wrap; gap:8px; }
   .dh-button{
     position:relative; display:inline-flex; align-items:center; justify-content:center;
@@ -359,7 +410,6 @@
   .dh-button-label{ display:inline-flex; align-items:center; min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
   .dh-button .md-emoji{ width:22px; height:22px; margin-right:4px; vertical-align:middle; }
   .dh-external-icon{ width:14px; height:14px; margin-left:6px; flex:none; }
-
   .dh-select-wrap{ position:relative; width:100%; max-width:400px; margin-right:16px; }
   .dh-select{
     display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:8px;
@@ -384,7 +434,6 @@
   .dh-select-option-copy{ min-width:0; font-size:14px; font-weight:500; line-height:18px; }
   .dh-select-option-title,.dh-select-option-desc{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dh-select-option-desc{ color:#b5bac1; }
-
   .dh-gallery{ display:grid; width:100%; max-width:100%; max-height:350px; gap:4px; overflow:hidden; border-radius:8px; }
   .dh-gallery.count-1{ display:block; }
   .dh-gallery.count-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -396,7 +445,6 @@
   .dh-gallery-image{ display:block; width:100%; height:100%; min-height:110px; object-fit:cover; }
   .dh-gallery.count-1 .dh-gallery-image{ width:auto; max-width:100%; max-height:350px; min-height:0; object-fit:contain; border-radius:8px; }
   .dh-gallery-more{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; background:rgba(0,0,0,.56); font-size:28px; font-weight:600; }
-
   /* Discord markdown details used by both classic embeds and Components V2. */
   .md-rich{ min-width:0; }
   .md-rich a{ color:var(--dh-link); text-decoration:none; }
@@ -419,445 +467,44 @@
   .md-mention{ padding:0 2px; border-radius:3px; color:#c9cdfb; background:rgba(88,101,242,.3); font-weight:500; }
   .md-mention:hover{ color:#fff; background:#5865f2; }
   .md-timestamp{ padding:1px 4px; border-radius:3px; color:var(--dh-text); background:rgba(78,80,88,.5); }
-
-  .json-pane{ padding:20px; }
+  .json-pane{ height:100%; min-height:0; display:flex; flex-direction:column; padding:14px; }
   .json-pane textarea{
-    width:100%; min-height:520px; background:rgba(0,0,0,.35); color:#9fe6b0;
-    font-family:'Courier New', Consolas, monospace; font-size:12.5px; line-height:1.6;
-    border:1px solid var(--forge-border); border-radius:10px; padding:18px; white-space:pre;
-    transition: border-color .15s ease, box-shadow .15s ease;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,.3);
+    flex:1 1 auto; width:100%; min-height:360px; background:#0b0e13; color:#a9e6c2;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; font-size:11px;
+    line-height:1.65; tab-size:2;
+    border:1px solid #252b36; border-radius:11px; padding:15px; white-space:pre; resize:none;
+    transition: border-color .16s ease, box-shadow .16s ease;
+    box-shadow: inset 0 1px 12px rgba(0,0,0,.18);
   }
-  .json-pane textarea:focus{ border-color: var(--forge-brass-dim); box-shadow: inset 0 2px 8px rgba(0,0,0,.3), 0 0 0 3px rgba(232,183,104,.1); }
-  .json-actions{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-  .copy-flash{ color: var(--forge-ok); font-size:12.5px; margin-left:8px; opacity:0; transition:opacity .2s; align-self:center; }
+  .json-pane textarea:hover{ border-color:#323947; }
+  .json-pane textarea:focus{ border-color: #6652d1; box-shadow: inset 0 1px 12px rgba(0,0,0,.18), 0 0 0 3px rgba(128,104,255,.09); }
+  .json-actions{ display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .json-actions .btn{ min-height:32px; padding:0 10px; font-size:10.5px; border-radius:8px; }
+  .copy-flash{ color: #67dfba; font-size:10px; margin-left:2px; opacity:0; transition:opacity .2s; align-self:center; }
   .copy-flash.show{ opacity:1; }
-  .import-status{ font-size:12.5px; font-weight:600; margin-bottom:10px; min-height:16px; }
-  .import-status.ok{ color: var(--forge-ok); }
-  .import-status.err{ color: var(--forge-danger); }
-  .import-status.idle{ color: var(--forge-text-dim); font-weight:500; }
+  .import-status{ font-size:10px; font-weight:600; margin-bottom:9px; min-height:0; line-height:1.45; padding:9px 10px; border:1px solid rgba(255,255,255,.045); border-radius:8px; background:rgba(255,255,255,.018); }
+  .import-status.ok{ color: #71dbbc; border-color:rgba(71,215,173,.12); background:rgba(71,215,173,.045); }
+  .import-status.err{ color: #ff879b; border-color:rgba(255,112,136,.13); background:rgba(255,112,136,.045); }
+  .import-status.idle{ color: #6f7889; font-weight:500; }
   .limit-warnings{ margin-bottom:10px; }
   .limit-warnings:empty{ display:none; }
   .limit-warnings .limit-warning{
     display:flex; align-items:flex-start; gap:6px;
-    font-size:12px; color: var(--forge-danger); margin-top:4px; line-height:1.4;
+    font-size:10px; color: var(--forge-danger); margin-top:4px; line-height:1.4;
   }
-
-  @media (max-width: 1200px){
-    .workspace{ grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
-    .builder{ border-right:none; border-bottom:1px solid var(--forge-border); max-height:60vh; }
-    .pane-col{ border-right:none; border-bottom:1px solid var(--forge-border); min-height:400px; }
-    .pane-col:last-child{ border-bottom:none; }
-  }
-
-
-  /* ======================================================================
-     EMBED FORGE — MINIMAL WORKSPACE REDESIGN
-     The preview renderer above remains Discord-accurate; this layer redesigns
-     the surrounding application chrome without changing builder behaviour.
-     ====================================================================== */
-  :root{
-    --forge-bg:#090b10;
-    --forge-panel:#10131a;
-    --forge-panel-raised:#151922;
-    --forge-panel-deep:#0e1118;
-    --forge-surface:#191e28;
-    --forge-surface-hover:#1d2330;
-    --forge-border:#272d39;
-    --forge-border-soft:rgba(255,255,255,.065);
-    --forge-text:#f5f7fb;
-    --forge-text-dim:#929aab;
-    --forge-text-faint:#626b7d;
-    --forge-brass:#8068ff;
-    --forge-brass-bright:#a999ff;
-    --forge-brass-dim:#5d49d2;
-    --forge-accent-soft:rgba(128,104,255,.12);
-    --forge-danger:#ff7088;
-    --forge-ok:#47d7ad;
-    --forge-glow:0 20px 60px rgba(0,0,0,.35);
-    color-scheme:dark;
-  }
-
-  html,body{
-    min-width:320px;
-    overflow:hidden;
-    background:
-      radial-gradient(900px 600px at 0% -10%, rgba(128,104,255,.10), transparent 58%),
-      radial-gradient(700px 500px at 100% 0%, rgba(61,201,255,.055), transparent 58%),
-      linear-gradient(180deg,#0a0c12 0%,#080a0f 100%);
-    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    letter-spacing:-.01em;
-  }
-
-  body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    opacity:.22;
-    background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
-    background-size:32px 32px;
-    mask-image:linear-gradient(to bottom,black,transparent 75%);
-  }
-
-  ::selection{background:rgba(128,104,255,.42);color:#fff}
-
-  .shell{height:100dvh;min-height:0;position:relative}
-
-  .topbar{
-    min-height:72px;
-    padding:12px 16px;
-    gap:18px;
-    background:rgba(10,12,18,.82);
-    border-bottom:1px solid rgba(255,255,255,.07);
-    box-shadow:none;
-    backdrop-filter:blur(24px) saturate(140%);
-    -webkit-backdrop-filter:blur(24px) saturate(140%);
-  }
-
-  .brand{align-items:center;gap:11px;min-width:max-content}
-  .brand-icon{
-    width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;
-    color:#c7bcff;
-    border:1px solid rgba(169,153,255,.28);
-    border-radius:12px;
-    background:linear-gradient(145deg,rgba(128,104,255,.24),rgba(128,104,255,.07));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 10px 30px rgba(45,31,112,.22);
-  }
-  .brand-icon svg{width:21px;height:21px}
-  .brand-copy{display:flex;flex-direction:column;gap:2px}
-  .brand .mark{
-    font-family:inherit;
-    font-size:15px;
-    line-height:1.1;
-    font-weight:720;
-    letter-spacing:-.025em;
-    color:var(--forge-text);
-    background:none;
-    -webkit-text-fill-color:initial;
-    text-shadow:none;
-  }
-  .brand .tag{
-    font-size:10px;
-    line-height:1.2;
-    font-weight:600;
-    letter-spacing:.08em;
-    color:var(--forge-text-faint);
-    text-transform:uppercase;
-  }
-
-  .mode-switch{
-    height:40px;
-    padding:4px;
-    border-radius:12px;
-    border-color:rgba(255,255,255,.075);
-    background:rgba(255,255,255,.035);
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.2);
-  }
-  .mode-switch button{
-    padding:0 15px;
-    border-radius:8px;
-    font-size:12px;
-    letter-spacing:-.005em;
-    color:#7f8798;
-  }
-  .mode-switch button.active{
-    color:#fff;
-    background:#222735;
-    box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 4px 14px rgba(0,0,0,.24);
-  }
-  .mode-switch button:not(.active):hover{color:#c9ced9;background:rgba(255,255,255,.035)}
-
-  .topbar-actions{gap:7px;min-width:0}
-  .template-control{
-    display:flex;align-items:center;gap:8px;height:40px;padding:0 5px 0 12px;
-    border:1px solid rgba(255,255,255,.075);border-radius:11px;background:rgba(255,255,255,.025)
-  }
-  .control-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--forge-text-faint)}
-  .template-select{
-    width:150px;max-width:150px;height:30px;padding:0 28px 0 8px;
-    border:0;border-radius:7px;background:#171b24;color:#dfe3ea;
-    font-size:12px;font-weight:600;box-shadow:none
-  }
-  .action-divider{width:1px;height:24px;margin:0 2px;background:rgba(255,255,255,.09)}
-
-  .btn{
-    min-height:38px;
-    padding:0 13px;
-    gap:7px;
-    border:1px solid rgba(255,255,255,.085);
-    border-radius:10px;
-    background:rgba(255,255,255,.035);
-    color:#dce1ea;
-    font-size:12px;
-    font-weight:650;
-    letter-spacing:-.005em;
-    box-shadow:none;
-    transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease,box-shadow .16s ease;
-  }
-  .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-  .btn:hover{
-    color:#fff;
-    border-color:rgba(255,255,255,.15);
-    background:rgba(255,255,255,.07);
-    transform:translateY(-1px);
-    box-shadow:0 8px 20px rgba(0,0,0,.18)
-  }
-  .btn:active{transform:translateY(0);box-shadow:none}
-  .btn.primary{
-    color:#fff;
-    border-color:rgba(169,153,255,.4);
-    background:linear-gradient(135deg,#846dff,#7258eb);
-    box-shadow:0 8px 24px rgba(88,64,202,.25),inset 0 1px 0 rgba(255,255,255,.2)
-  }
-  .btn.primary:hover{filter:none;background:linear-gradient(135deg,#927eff,#7c63ef);box-shadow:0 10px 28px rgba(88,64,202,.34)}
-  .btn.danger{color:#ff8ca0}
-  .btn.danger:hover{border-color:rgba(255,112,136,.24);background:rgba(255,112,136,.08)}
-  .btn-icon{width:38px;padding:0;justify-content:center}
-
-  .btn:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
-    outline:2px solid rgba(169,153,255,.9);outline-offset:2px
-  }
-
-  .workspace{
-    flex:1;
-    min-height:0;
-    display:grid;
-    grid-template-columns:minmax(410px,1.08fr) minmax(380px,.92fr) minmax(430px,1.15fr);
-    gap:12px;
-    padding:12px;
-    overflow:hidden;
-  }
-
-  .pane-col,.builder{
-    border:0;
-    background:transparent;
-  }
-  .pane-col{
-    min-width:0;
-    min-height:0;
-    overflow:hidden;
-    border:1px solid rgba(255,255,255,.075);
-    border-radius:16px;
-    background:rgba(16,19,26,.93);
-    box-shadow:0 18px 55px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025)
-  }
-  .pane-col:last-child{border-right:1px solid rgba(255,255,255,.075)}
-  .pane-header{
-    min-height:62px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    padding:12px 15px;
-    flex:0 0 auto;
-    background:rgba(19,23,31,.88);
-    border-bottom:1px solid rgba(255,255,255,.065);
-    color:var(--forge-text);
-    text-transform:none;
-    letter-spacing:normal;
-    backdrop-filter:none;
-  }
-  .pane-heading-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
-  .pane-heading-copy strong{font-size:13px;font-weight:680;letter-spacing:-.015em;color:#edf0f6}
-  .pane-kicker{font-size:9px;line-height:1;font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:#7160d6}
-  .status-pill,.format-badge{
-    display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
-    min-height:24px;padding:0 8px;border:1px solid rgba(255,255,255,.07);border-radius:999px;
-    background:rgba(255,255,255,.025);color:#7f8797;font-size:9.5px;font-weight:650;letter-spacing:.01em
-  }
-  .status-pill i{width:6px;height:6px;border-radius:50%;background:#687184;box-shadow:0 0 0 3px rgba(104,113,132,.10)}
-  .status-pill.live{color:#86dfc4;border-color:rgba(71,215,173,.15);background:rgba(71,215,173,.055)}
-  .status-pill.live i{background:var(--forge-ok);box-shadow:0 0 0 3px rgba(71,215,173,.12),0 0 12px rgba(71,215,173,.45)}
-  .format-badge{font-family:"SFMono-Regular",Consolas,monospace;color:#b8afff;background:rgba(128,104,255,.07);border-color:rgba(128,104,255,.14)}
-
-  .pane-body{min-height:0;background:transparent}
-  .builder-body{overflow-y:auto}
-  .builder{
-    min-height:100%;
-    padding:14px;
-    overflow:visible;
-  }
-
-  .builder::-webkit-scrollbar,.pane-body::-webkit-scrollbar{width:8px;height:8px}
-  .builder::-webkit-scrollbar-track,.pane-body::-webkit-scrollbar-track{background:transparent}
-  .builder::-webkit-scrollbar-thumb,.pane-body::-webkit-scrollbar-thumb{background:#2b313d;border:2px solid transparent;background-clip:padding-box;border-radius:99px}
-  .builder::-webkit-scrollbar-thumb:hover,.pane-body::-webkit-scrollbar-thumb:hover{background:#3b4352;border:2px solid transparent;background-clip:padding-box}
-
-  .section-block{
-    margin-bottom:10px;
-    padding:15px;
-    border:1px solid rgba(255,255,255,.065);
-    border-radius:13px;
-    background:#141821;
-    box-shadow:none;
-    transition:border-color .16s ease,background .16s ease
-  }
-  .section-block:hover{border-color:rgba(128,104,255,.18);background:#151a24}
-  .section-block>.section-title{
-    min-height:20px;
-    margin-bottom:13px;
-    color:#d9dde6;
-    font-size:11px;
-    font-weight:720;
-    letter-spacing:.035em;
-    text-transform:uppercase
-  }
-  .section-title span[style]{color:#70798b!important;font-size:10px!important}
-
-  label.field-label{
-    margin:13px 0 6px;
-    color:#848d9f;
-    font-size:10.5px;
-    font-weight:650;
-    letter-spacing:.015em
-  }
-  label.field-label:first-child{margin-top:0}
-
-  input[type=text],input[type=url],input[type=number],textarea,select{
-    min-height:39px;
-    padding:9px 11px;
-    border:1px solid #2a303c;
-    border-radius:9px;
-    background:#0f1218;
-    color:#ecf0f6;
-    font-size:12px;
-    line-height:1.45;
-    box-shadow:inset 0 1px 1px rgba(0,0,0,.16);
-    transition:border-color .16s ease,background .16s ease,box-shadow .16s ease
-  }
-  textarea{min-height:74px;resize:vertical}
-  input::placeholder,textarea::placeholder{color:#505969}
-  input[type=text]:hover,input[type=url]:hover,input[type=number]:hover,textarea:hover,select:hover{border-color:#363e4d}
-  input[type=text]:focus,input[type=url]:focus,input[type=number]:focus,textarea:focus,select:focus{
-    border-color:#725ee7;
-    background:#11151d;
-    box-shadow:0 0 0 3px rgba(128,104,255,.10)
-  }
-  input:disabled{opacity:.42}
-  select{cursor:pointer}
-
-  .row{gap:8px}
-  .color-row{gap:8px}
-  .color-row input[type=color]{width:39px;height:39px;padding:4px;border:1px solid #2a303c;border-radius:9px;background:#0f1218}
-
-  .toggle-row,.checkbox-row{
-    gap:9px;
-    padding:9px 10px;
-    border:1px solid rgba(255,255,255,.05);
-    border-radius:9px;
-    background:rgba(255,255,255,.018)
-  }
-  .toggle-row{margin:12px 0 8px}
-  .checkbox-row{margin-top:10px}
-  .toggle-row input,.checkbox-row input{width:14px;height:14px;accent-color:#8068ff;flex:0 0 auto}
-  .toggle-row label,.checkbox-row label{font-size:11px;line-height:1.35;color:#b9bfca}
-
-  .subcard{
-    margin-top:8px;
-    padding:11px;
-    border:1px solid rgba(255,255,255,.055);
-    border-radius:10px;
-    background:var(--forge-panel-deep);
-    box-shadow:none
-  }
-  .subcard[style*="background"]{background:var(--forge-panel-deep)!important}
-  .subcard .subcard-head{margin-bottom:9px}
-  .subcard .subcard-head .idx{font-size:9.5px;font-weight:720;letter-spacing:.06em;text-transform:uppercase;color:#687184}
-
-  .icon-btn{
-    min-width:26px;min-height:26px;padding:0 7px;
-    display:inline-grid;place-items:center;
-    border:1px solid transparent;border-radius:7px;
-    color:#667083;font-size:13px
-  }
-  .icon-btn:hover{color:#ff879b;border-color:rgba(255,112,136,.12);background:rgba(255,112,136,.07)}
-  .icon-btn.move:hover{color:#b8afff;border-color:rgba(128,104,255,.14);background:rgba(128,104,255,.08)}
-
-  .add-btn{
-    min-height:38px;
-    margin-top:9px;
-    padding:0 12px;
-    border:1px dashed #343b49;
-    border-radius:10px;
-    background:rgba(255,255,255,.012);
-    color:#788194;
-    font-size:11px;
-    font-weight:650
-  }
-  .add-btn:hover{border-color:#6652d1;color:#b8afff;background:rgba(128,104,255,.055)}
-
-  .embed-tabs,.container-tabs{
-    position:sticky;top:-1px;z-index:4;
-    gap:5px;margin:-1px -1px 10px;padding:6px;
-    border:1px solid rgba(255,255,255,.055);border-radius:11px;
-    background:rgba(14,17,24,.94);backdrop-filter:blur(12px)
-  }
-  .embed-tabs button,.container-tabs button{
-    min-height:31px;padding:0 11px;
-    border:0;border-radius:7px;
-    background:transparent;color:#6f788b;
-    font-size:10.5px;font-weight:650
-  }
-  .embed-tabs button.active,.container-tabs button.active{
-    border:0;color:#fff;background:#282d3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 3px 10px rgba(0,0,0,.18)
-  }
-  .embed-tabs button:not(.active):hover,.container-tabs button:not(.active):hover{border-color:transparent;color:#c6cbd5;background:rgba(255,255,255,.04)}
-
-  .hint{margin-top:7px;color:#667083;font-size:10.5px;line-height:1.55}
-  .hint code{padding:2px 4px;border:1px solid rgba(255,255,255,.055);border-radius:5px;background:#0c0f14;color:#aaa2dc}
-
-  .json-pane{
-    height:100%;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    padding:14px
-  }
-  .json-actions{gap:6px;margin-bottom:10px;align-items:center}
-  .json-actions .btn{min-height:32px;padding:0 10px;font-size:10.5px;border-radius:8px}
-  .copy-flash{margin-left:2px;color:#67dfba;font-size:10px}
-  .import-status{min-height:0;margin-bottom:9px;padding:9px 10px;border:1px solid rgba(255,255,255,.045);border-radius:8px;background:rgba(255,255,255,.018);font-size:10px;line-height:1.45}
-  .import-status.idle{color:#6f7889}
-  .import-status.ok{color:#71dbbc;border-color:rgba(71,215,173,.12);background:rgba(71,215,173,.045)}
-  .import-status.err{color:#ff879b;border-color:rgba(255,112,136,.13);background:rgba(255,112,136,.045)}
-  .limit-warnings .limit-warning{font-size:10px}
-  .json-pane textarea{
-    flex:1 1 auto;
-    min-height:360px;
-    padding:15px;
-    resize:none;
-    border:1px solid #252b36;
-    border-radius:11px;
-    background:#0b0e13;
-    color:#a9e6c2;
-    font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
-    font-size:11px;
-    line-height:1.65;
-    tab-size:2;
-    box-shadow:inset 0 1px 12px rgba(0,0,0,.18)
-  }
-  .json-pane textarea:hover{border-color:#323947}
-  .json-pane textarea:focus{border-color:#6652d1;box-shadow:inset 0 1px 12px rgba(0,0,0,.18),0 0 0 3px rgba(128,104,255,.09)}
-  .json-hint{margin:9px 2px 0}
-
-  .preview-body{overflow:auto;padding:14px;background:#0c0f15}
+  .json-hint{ margin:9px 2px 0; }
+  .preview-body{ overflow:auto; padding:14px; background:#0c0f15; }
   .preview-stage{
-    width:100%;min-width:390px;min-height:100%;
+    width:100%; min-width:390px; min-height:100%;
     overflow:hidden;
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:13px;
+    border:1px solid rgba(255,255,255,.08); border-radius:13px;
     background:#313338;
-    box-shadow:0 18px 50px rgba(0,0,0,.24)
+    box-shadow:0 18px 50px rgba(0,0,0,.24);
   }
   .preview-chrome{
-    height:40px;
-    display:flex;align-items:center;gap:12px;
-    padding:0 12px;
-    border-bottom:1px solid rgba(0,0,0,.24);
-    background:#282a2f;
-    color:#949ba4;
-    font-family:Inter,ui-sans-serif,sans-serif
+    height:40px; display:flex; align-items:center; gap:12px; padding:0 12px;
+    border-bottom:1px solid rgba(0,0,0,.24); background:#282a2f; color:#949ba4;
+    font-family:Inter,ui-sans-serif,sans-serif;
   }
   .chrome-dots{display:flex;gap:5px}
   .chrome-dots i{width:7px;height:7px;border-radius:50%;background:#4a4d54}
@@ -865,8 +512,6 @@
   .preview-channel{font-size:10px;font-weight:650;color:#aeb3bb}
   .preview-secure{margin-left:auto;display:grid;place-items:center;color:#727780}
   .preview-secure svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
-  .discord-pane{min-height:calc(100% - 40px);padding:22px 16px 70px;background:#313338}
-
   @media (max-width:1600px){
     .workspace{grid-template-columns:minmax(390px,1fr) minmax(350px,.84fr) minmax(390px,1fr)}
     .brand .tag{display:none}
@@ -874,7 +519,6 @@
     .template-select{width:135px}
     .topbar{gap:12px}
   }
-
   @media (max-width:1320px){
     html,body{overflow:auto}
     .shell{height:auto;min-height:100dvh}
@@ -884,7 +528,6 @@
     .preview-pane{grid-column:1/-1;min-height:560px}
     .pane-col{min-height:620px}
   }
-
   @media (max-width:820px){
     .topbar{padding:10px;gap:10px}
     .brand{margin-right:auto}
@@ -895,20 +538,15 @@
     .action-divider{display:none}
     .workspace{grid-template-columns:1fr;padding:8px;gap:8px}
     .preview-pane{grid-column:auto}
-    .pane-col{min-height:560px;border-radius:13px}
+    .pane-col{min-height:0;height:auto;overflow:hidden;border-radius:13px}
     .pane-header{min-height:57px}
-    .row{flex-direction:column}
-    .preview-stage{min-width:350px}
-  }
-
-  @media (max-width:820px){
-    .pane-col{min-height:0;height:auto;overflow:hidden}
     .pane-body,.builder-body{overflow:visible}
     .builder{min-height:0;max-height:none;border-bottom:0}
     .code-pane{min-height:620px}
     .preview-pane{min-height:560px}
+    .row{flex-direction:column}
+    .preview-stage{min-width:350px}
   }
-
   @media (max-width:520px){
     .brand-icon{width:34px;height:34px;border-radius:10px}.brand .mark{font-size:14px}
     .mode-switch{width:100%;order:3}.mode-switch button{flex:1}
@@ -931,17 +569,13 @@
     .preview-stage{min-width:320px}
     .code-pane{min-height:600px}
   }
-
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
   }
-
 </style>
 </head>
 <body>
-
 <div class="shell">
-
   <header class="topbar">
     <div class="brand">
       <span class="brand-icon" aria-hidden="true">
@@ -955,12 +589,10 @@
         <span class="tag">Discord message studio</span>
       </span>
     </div>
-
     <nav class="mode-switch" role="tablist" aria-label="Builder mode">
       <button id="tab-classic" class="active" onclick="setMode('classic')">Classic</button>
       <button id="tab-cv2" onclick="setMode('cv2')">Components V2</button>
     </nav>
-
     <div class="topbar-actions">
       <div class="template-control">
         <span class="control-label">Template</span>
@@ -984,9 +616,7 @@
       </button>
     </div>
   </header>
-
   <main class="workspace">
-
     <section class="pane-col editor-pane" aria-label="Builder editor">
       <div class="pane-header">
         <div class="pane-heading-copy">
@@ -1000,7 +630,6 @@
         <div class="builder" id="builder-cv2" style="display:none;"></div>
       </div>
     </section>
-
     <section class="pane-col code-pane" aria-label="JSON editor">
       <div class="pane-header">
         <div class="pane-heading-copy">
@@ -1023,7 +652,6 @@
         </div>
       </div>
     </section>
-
     <section class="pane-col preview-pane" aria-label="Discord preview">
       <div class="pane-header">
         <div class="pane-heading-copy">
@@ -1045,7 +673,6 @@
         </div>
       </div>
     </section>
-
   </main>
 </div>
 <script>
@@ -1053,7 +680,6 @@
    STATE
    ========================================================================= */
 let mode = 'classic';
-
 function newEmbed(){
   return {
     title:'', description:'', url:'', color:'#5865f2', color_enabled:true, timestamp:false,
@@ -1064,36 +690,28 @@ function newEmbed(){
   };
 }
 function newField(){ return { name:'', value:'', inline:false }; }
-
 let classicState = { content:'', embeds:[ newEmbed() ], buttonRows:[] };
 let activeEmbedIdx = 0;
-
 function newContainer(){ return { accent_color:'#5865f2', color_enabled:true, children:[] }; }
 let cv2State = { containers:[ newContainer() ] };
 let activeContainerIdx = 0;
-
 const SELECT_KIND_LABELS = { 3:'String select', 5:'User select', 6:'Role select', 7:'Mentionable select', 8:'Channel select' };
-
 /* Mention labels are normally resolved by Discord using guild context. Raw
    message dumps often contain only IDs, so the preview keeps a small lookup
    table populated purely from whatever metadata is present in the pasted
    payload — no names are pre-filled, since any hardcoded ID here would
    only ever be correct for one specific test message. */
 let mentionLookup = { channels:{}, users:{}, roles:{} };
-
 function resetMentionLookup(){
   mentionLookup = { channels:{}, users:{}, roles:{} };
 }
-
 function addMentionName(kind, id, name){
   if(!id || !name || !mentionLookup[kind]) return;
   mentionLookup[kind][String(id)] = String(name).replace(/^[@#]/, '');
 }
-
 function hydrateMentionLookup(payload){
   resetMentionLookup();
   if(!payload || typeof payload !== 'object') return;
-
   const addList = (list, kind, nameKeys) => {
     if(!Array.isArray(list)) return;
     for(const item of list){
@@ -1102,11 +720,9 @@ function hydrateMentionLookup(payload){
       addMentionName(kind, item.id ?? item.channel_id ?? item.user_id ?? item.role_id, name);
     }
   };
-
   addList(payload.mentionChannels, 'channels', ['name','rawName','channelName']);
   addList(payload.mentions, 'users', ['globalName','displayName','username','name']);
   addList(payload.mentionRoles, 'roles', ['name','rawName','roleName']);
-
   // Also accept optional maps in cleaner bot payloads.
   const mapSources = [
     ['channels', payload.channel_names ?? payload.channelNames],
@@ -1118,7 +734,6 @@ function hydrateMentionLookup(payload){
     for(const [id, name] of Object.entries(map)) addMentionName(kind, id, name);
   }
 }
-
 /* =========================================================================
    MODE / TAB SWITCHING
    ========================================================================= */
@@ -1130,17 +745,14 @@ function setMode(m){
   document.getElementById('builder-cv2').style.display = m==='cv2' ? 'block':'none';
   renderAll();
 }
-
 /* =========================================================================
    SAFE TEXT / LIGHTWEIGHT MARKDOWN (with real ANSI code block support)
    ========================================================================= */
 function escapeHTML(s){
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-
 const ANSI_FG = {30:'#4f545c',31:'#dc322f',32:'#859900',33:'#b58900',34:'#268bd2',35:'#d33682',36:'#2aa198',37:'#ffffff'};
 const ANSI_BG = {40:'#002b36',41:'#cb4b16',42:'#586e75',43:'#657b83',44:'#839496',45:'#6c71c4',46:'#93a1a1',47:'#fdf6e3'};
-
 /* `text` here is assumed ALREADY html-escaped (caller passes escaped input) —
    this only interprets ESC[...m sequences and wraps the literal text
    segments in styled spans, it never touches the text's own escaping. */
@@ -1173,26 +785,21 @@ function ansiToHtml(text){
   }
   return out;
 }
-
 function renderMarkdownCore(raw, blockLevel){
   if(!raw) return '';
   let s = escapeHTML(raw);
-
   const blocks = [];
   const stash = (html) => { blocks.push(html); return '\u0000'+(blocks.length-1)+'\u0000'; };
-
   s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
     const inner = (lang === 'ansi') ? ansiToHtml(code) : code;
     return stash('<pre>'+inner+'</pre>');
   });
-
   // Links — handled FIRST and stashed as placeholders immediately, so
   // nothing later (especially the bare-autolink pass) can ever re-match
   // text that's already inside a built <a> tag. That re-matching (an
   // already-built href getting caught by the bare "<url>" autolink regex)
   // was the exact cause of the doubled/broken <a> tags seen in practice.
   const linkHtml = (label, url) => `<a href="${url}" target="_blank" rel="noopener" style="color:#00a8fc;text-decoration:none;">${label}</a>`;
-
   // Masked link with Discord's suppress-embed wrapper: [text](<url>)
   s = s.replace(/\[([^\]]+)\]\(&lt;([^&]+)&gt;\)/g, (m, label, url) => stash(linkHtml(label, url)));
   // Masked link, plain: [text](url)
@@ -1200,14 +807,12 @@ function renderMarkdownCore(raw, blockLevel){
   // Standalone suppressed/auto link: <url> (only what's left, since masked
   // links already consumed their own bracketed URLs into placeholders above)
   s = s.replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, (m, url) => stash(linkHtml(url, url)));
-
   // Custom Discord emoji <:name:id> / animated <a:name:id> — rendered as
   // real images straight from Discord's public CDN (no auth needed).
   s = s.replace(/&lt;(a?):(\w+):(\d+)&gt;/g, (m, animated, name, id) => {
     const ext = animated === 'a' ? 'gif' : 'png';
     return `<img class="md-emoji" src="https://cdn.discordapp.com/emojis/${id}.${ext}" alt=":${name}:" title=":${name}:">`;
   });
-
   // Mentions and timestamps — Discord resolves these IDs using guild
   // context. Use names collected from the pasted payload when available,
   // then fall back to the same generic chips as before.
@@ -1224,7 +829,6 @@ function renderMarkdownCore(raw, blockLevel){
     const text = formatDiscordTimestamp(parseInt(unix), fmt || 'f');
     return `<span class="md-timestamp">${escapeHTML(text)}</span>`;
   });
-
   s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
   s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>');
   s = s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -1232,7 +836,6 @@ function renderMarkdownCore(raw, blockLevel){
   s = s.replace(/(?<!_)_([^_\n]+)_(?!_)/g, '<i>$1</i>');
   s = s.replace(/~~(.+?)~~/g, '<s>$1</s>');
   s = s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<i>$1</i>');
-
   // Block-level constructs (headings, blockquotes, lists) only apply to
   // full message/description/text-display content — NOT to field names,
   // which Discord always treats as compact single-line text with inline
@@ -1250,7 +853,6 @@ function renderMarkdownCore(raw, blockLevel){
     s = s.replace(/(^|\n)&gt;&gt;&gt; ?([\s\S]*)$/, (m, prefix, content) =>
       prefix + stash('<blockquote>' + content.replace(/\n/g, '<br>') + '</blockquote>')
     );
-
     // Discord merges consecutive `> ...` lines into one blockquote with a
     // single continuous bar. Building one <blockquote> per line caused the
     // large gaps and split bars shown in the old preview.
@@ -1260,7 +862,6 @@ function renderMarkdownCore(raw, blockLevel){
       );
       return prefix + stash('<blockquote>' + lines.join('<br>') + '</blockquote>');
     });
-
     // Bullet and numbered lists — Discord renders these with a real
     // bullet/number and a hanging indent.
     s = s.replace(/(?:^[ \t]*- .+$\n?)+/gm, (block) => {
@@ -1272,7 +873,6 @@ function renderMarkdownCore(raw, blockLevel){
       return stash('<ol class="md-list">' + items.map(it => `<li>${it}</li>`).join('') + '</ol>');
     });
   }
-
   /* Headings use a zero-width end-of-line anchor, so their trailing
      newline is never consumed by the heading regex itself — stripping it
      here prevents a fake extra blank line directly after a heading, which
@@ -1287,20 +887,16 @@ function renderMarkdownCore(raw, blockLevel){
   s = s.replace(/(<\/(?:h1|h2|h3)>)\n/g, '$1');
   s = s.replace(/\n(?=<(?:h1|h2|h3)\b)/g, '');
   s = s.replace(/\n/g, '<br>');
-
   while(/\u0000\d+\u0000/.test(s)){
     s = s.replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[i]);
   }
-
   /* Same heading-only scope for the post-restoration pass. */
   s = s.replace(/<br>(?=<(?:h1|h2|h3)\b)/g, '');
   s = s.replace(/<\/(h1|h2|h3)><br>/g, '</$1>');
   return s;
 }
-
 function renderMarkdown(raw){ return renderMarkdownCore(raw, true); }
 function renderInlineMarkdown(raw){ return renderMarkdownCore(raw, false); }
-
 function formatDiscordTimestamp(unixSeconds, fmt){
   const d = new Date(unixSeconds * 1000);
   if(isNaN(d.getTime())) return 'Invalid Date';
@@ -1308,7 +904,6 @@ function formatDiscordTimestamp(unixSeconds, fmt){
   const shortDateOpts = { year:'numeric', month:'2-digit', day:'2-digit' };
   const timeOpts = { hour:'numeric', minute:'2-digit' };
   const longTimeOpts = { hour:'numeric', minute:'2-digit', second:'2-digit' };
-
   switch(fmt){
     case 't': return d.toLocaleTimeString([], timeOpts);
     case 'T': return d.toLocaleTimeString([], longTimeOpts);
@@ -1333,56 +928,63 @@ function formatDiscordTimestamp(unixSeconds, fmt){
     default: return d.toLocaleDateString([], dateOpts) + ' ' + d.toLocaleTimeString([], timeOpts);
   }
 }
-
-function hexToInt(hex){
-  if(!hex) return 0x5865f2;
-  return parseInt(hex.replace('#',''), 16);
+/* Strict hex validator + safe conversion. Anything not matching a real
+   #RRGGBB (or #RGB) hex string returns null rather than silently
+   falling back to the Discord blurple default. Callers decide what null
+   means for them (skip the color, warn, etc.) instead of shipping wrong
+   data with no signal that the input was bad. */
+function isValidHex(hex){
+  return typeof hex === 'string' && /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(hex.trim());
 }
-
+function normalizeHex(hex){
+  if(!isValidHex(hex)) return null;
+  let h = hex.trim();
+  if(h.length === 4){ // #rgb -> #rrggbb
+    h = '#' + [...h.slice(1)].map(c => c+c).join('');
+  }
+  return h.toLowerCase();
+}
+function hexToInt(hex){
+  const normalized = normalizeHex(hex);
+  return normalized ? parseInt(normalized.slice(1), 16) : 0x5865f2;
+}
 /* =========================================================================
    CLASSIC EMBED BUILDER (left panel)
    ========================================================================= */
 function renderClassicBuilder(){
   const el = document.getElementById('builder-classic');
   const e = classicState.embeds[activeEmbedIdx] || newEmbed();
-
   let tabs = classicState.embeds.map((_, i) =>
     `<button class="${i===activeEmbedIdx?'active':''}" onclick="selectEmbed(${i})">Embed ${i+1}</button>`
   ).join('');
-
+  const colorInvalid = e.color_enabled && !isValidHex(e.color);
   el.innerHTML = `
     <div class="section-block">
       <div class="section-title">Message content</div>
       <label class="field-label">Text above the embed (optional)</label>
       <textarea oninput="classicState.content=this.value; refreshPreviewDebounced()" placeholder="Plain message text...">${escapeHTML(classicState.content)}</textarea>
     </div>
-
     <div class="embed-tabs">${tabs}</div>
-
     <div class="section-block">
       <div class="section-title">
         <span>Embed ${activeEmbedIdx+1}</span>
         ${classicState.embeds.length>1 ? `<button class="icon-btn" title="Remove this embed" onclick="removeEmbed(${activeEmbedIdx})">✕</button>` : ''}
       </div>
-
       <label class="field-label">Title</label>
       <input type="text" value="${escapeHTML(e.title)}" oninput="e_upd('title', this.value)" placeholder="Embed title">
-
       <label class="field-label">Title URL (makes the title clickable)</label>
       <input type="url" value="${escapeHTML(e.url)}" oninput="e_upd('url', this.value)" placeholder="https://...">
-
       <label class="field-label">Description</label>
       <textarea oninput="e_upd('description', this.value)" placeholder="Supports **bold**, *italic*, __underline__, ~~strike~~, code, quotes, links">${escapeHTML(e.description)}</textarea>
-
       <div class="toggle-row">
         <input type="checkbox" id="color-enabled" ${e.color_enabled?'checked':''} onchange="e_toggleColor(this.checked)">
         <label for="color-enabled">Use a custom color (off = Discord's default gray edge)</label>
       </div>
       <div class="color-row">
-        <input type="color" value="${e.color}" oninput="e_upd('color', this.value)" ${e.color_enabled?'':'disabled'}>
-        <input type="text" value="${e.color}" oninput="e_upd('color', this.value)" style="flex:1" ${e.color_enabled?'':'disabled'}>
+        <input type="color" value="${normalizeHex(e.color) || '#5865f2'}" oninput="e_upd('color', this.value)" ${e.color_enabled?'':'disabled'}>
+        <input type="text" value="${escapeHTML(e.color)}" oninput="e_upd('color', this.value)" style="flex:1" ${e.color_enabled?'':'disabled'}>
       </div>
-
+      ${colorInvalid ? `<div class="hint" style="color:var(--forge-danger);">Not a valid hex color (expected #rrggbb) — the exported JSON will fall back to Discord blurple until this is fixed.</div>` : ''}
       <label class="field-label">Author name</label>
       <input type="text" value="${escapeHTML(e.author.name)}" oninput="e_updNested('author','name', this.value)" placeholder="Author name">
       <div class="row" style="margin-top:8px;">
@@ -1395,24 +997,19 @@ function renderClassicBuilder(){
           <input type="url" value="${escapeHTML(e.author.icon_url)}" oninput="e_updNested('author','icon_url', this.value)" placeholder="https://...">
         </div>
       </div>
-
       <label class="field-label">Thumbnail URL (small, top-right)</label>
       <input type="url" value="${escapeHTML(e.thumbnail.url)}" oninput="e_updNested('thumbnail','url', this.value)" placeholder="https://...">
-
       <label class="field-label">Image URL (large, bottom)</label>
       <input type="url" value="${escapeHTML(e.image.url)}" oninput="e_updNested('image','url', this.value)" placeholder="https://...">
-
       <label class="field-label">Footer text</label>
       <input type="text" value="${escapeHTML(e.footer.text)}" oninput="e_updNested('footer','text', this.value)" placeholder="Footer text">
       <label class="field-label">Footer icon URL</label>
       <input type="url" value="${escapeHTML(e.footer.icon_url)}" oninput="e_updNested('footer','icon_url', this.value)" placeholder="https://...">
-
       <div class="checkbox-row">
         <input type="checkbox" id="ts-check" ${e.timestamp?'checked':''} onchange="e_upd('timestamp', this.checked)">
         <label for="ts-check">Show current timestamp</label>
       </div>
     </div>
-
     <div class="section-block">
       <div class="section-title">Fields <span style="color:var(--forge-text-dim); font-weight:600;">${e.fields.length}/25</span></div>
       ${e.fields.map((f,i)=>`
@@ -1431,9 +1028,7 @@ function renderClassicBuilder(){
       `).join('')}
       ${e.fields.length<25 ? `<button class="add-btn" onclick="addField()">+ Add field</button>` : ''}
     </div>
-
     ${classicState.embeds.length<10 ? `<button class="add-btn" onclick="addEmbed()">+ Add another embed</button>` : ''}
-
     <div class="section-block">
       <div class="section-title">Buttons (legacy action rows) <span style="color:var(--forge-text-dim); font-weight:600;">${classicState.buttonRows.length}/5 rows</span></div>
       <p class="hint" style="margin-top:0;">These sit alongside the content/embed above — this is Discord's original button system (predates Components V2), not the newer Container-based one.</p>
@@ -1443,6 +1038,7 @@ function renderClassicBuilder(){
             <span class="idx">Row ${ri+1} <span style="color:var(--forge-text-dim); font-weight:600;">(${row.length}/5)</span></span>
             <button class="icon-btn" onclick="removeButtonRow(${ri})">✕</button>
           </div>
+          ${row.length === 0 ? `<p class="hint" style="margin-top:0;">This row is empty — add a button below or remove the row.</p>` : ''}
           ${row.map((b, bi) => `
             <div class="subcard" style="background:var(--forge-panel-deep);">
               <div class="subcard-head">
@@ -1468,7 +1064,6 @@ function renderClassicBuilder(){
     </div>
   `;
 }
-
 function addButtonRow(){ classicState.buttonRows.push([]); renderAll(); }
 function removeButtonRow(ri){ classicState.buttonRows.splice(ri,1); renderAll(); }
 function addLegacyButton(ri){ classicState.buttonRows[ri].push({style:5, label:'', url:'', emoji:''}); renderAll(); }
@@ -1490,21 +1085,18 @@ function removeEmbed(i){
   renderAll();
 }
 function selectEmbed(i){ activeEmbedIdx = i; renderAll(); }
-
 /* =========================================================================
    COMPONENTS V2 BUILDER (left panel)
    ========================================================================= */
 function renderCV2Builder(){
   const el = document.getElementById('builder-cv2');
   const c = cv2State.containers[activeContainerIdx] || newContainer();
-
   let tabs = cv2State.containers.map((_, i) =>
     `<button class="${i===activeContainerIdx?'active':''}" onclick="selectContainer(${i})">Container ${i+1}</button>`
   ).join('');
-
+  const colorInvalid = c.color_enabled && !isValidHex(c.accent_color);
   el.innerHTML = `
     <div class="container-tabs">${tabs}</div>
-
     <div class="section-block">
       <div class="section-title">
         <span>Container ${activeContainerIdx+1}</span>
@@ -1515,16 +1107,15 @@ function renderCV2Builder(){
         <label for="c-color-enabled">Use a custom accent color (off = no colored edge, fully removable in Components V2)</label>
       </div>
       <div class="color-row">
-        <input type="color" value="${c.accent_color}" oninput="c_upd('accent_color', this.value)" ${c.color_enabled?'':'disabled'}>
-        <input type="text" value="${c.accent_color}" oninput="c_upd('accent_color', this.value)" style="flex:1" ${c.color_enabled?'':'disabled'}>
+        <input type="color" value="${normalizeHex(c.accent_color) || '#5865f2'}" oninput="c_upd('accent_color', this.value)" ${c.color_enabled?'':'disabled'}>
+        <input type="text" value="${escapeHTML(c.accent_color)}" oninput="c_upd('accent_color', this.value)" style="flex:1" ${c.color_enabled?'':'disabled'}>
       </div>
+      ${colorInvalid ? `<div class="hint" style="color:var(--forge-danger);">Not a valid hex color (expected #rrggbb) — the exported JSON will fall back to Discord blurple until this is fixed.</div>` : ''}
       <p class="hint">A Container holds up to 10 children total.</p>
     </div>
-
     <div class="section-block">
       <div class="section-title">Children <span style="color:var(--forge-text-dim); font-weight:600;">${c.children.length}/10</span></div>
       ${c.children.map((ch,i)=>renderChildEditor(ch,i)).join('')}
-
       ${c.children.length<10 ? `
         <div class="row" style="margin-top:12px; flex-wrap:wrap; gap:6px;">
           <button class="btn" style="flex:none;" onclick="addChild('text')">+ Text</button>
@@ -1536,22 +1127,19 @@ function renderCV2Builder(){
         </div>
       ` : ''}
     </div>
-
     ${cv2State.containers.length<10 ? `<button class="add-btn" onclick="addContainer()">+ Add another container</button>` : ''}
     <p class="hint">Discord caps a message at 40 total components (everything nested included) — keep an eye on the JSON output tab if you're building something large.</p>
   `;
 }
-
 function renderChildEditor(ch, i){
   const head = (label) => `
     <div class="subcard-head">
       <span class="idx">${label}</span>
       <span>
         ${i>0 ? `<button class="icon-btn move" onclick="moveChild(${i},-1)" title="Move up">↑</button>` : ''}
-        <button class="icon-btn" onclick="removeChild(${i})" title="Remove">✕</button>
+        <button class="icon-btn" onclick="removeCV2Child(${i})" title="Remove">✕</button>
       </span>
     </div>`;
-
   if(ch.type==='text'){
     return `<div class="subcard">${head('Text Display')}
       <textarea oninput="ch_upd(${i},'content',this.value)" placeholder="# Heading, **bold**, code, quote...">${escapeHTML(ch.content)}</textarea>
@@ -1607,10 +1195,8 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
     return `<div class="subcard">${head('Select menu')}
       <label class="field-label" style="margin-top:0;">Kind</label>
       <select onchange="sel_updKind(${i}, this.value)">${kindOptions}</select>
-
       <label class="field-label">Placeholder text</label>
       <input type="text" value="${escapeHTML(ch.placeholder)}" oninput="sel_upd(${i},'placeholder',this.value)" placeholder="Choose an option...">
-
       <div class="row" style="margin-top:8px;">
         <div>
           <label class="field-label" style="margin-top:0;">Min values</label>
@@ -1621,7 +1207,6 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
           <input type="number" min="1" max="25" value="${ch.max_values}" oninput="sel_upd(${i},'max_values',parseInt(this.value)||1)">
         </div>
       </div>
-
       ${ch.kind==3 ? `
         <div class="section-title" style="margin-top:14px;">Options <span style="color:var(--forge-text-dim); font-weight:600;">${ch.options.length}/25</span></div>
         ${ch.options.map((o,oi)=>`
@@ -1638,7 +1223,6 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
         `).join('')}
         ${ch.options.length<25 ? `<button class="add-btn" onclick="addSelectOption(${i})">+ Add option</button>` : ''}
       ` : `<p class="hint">${SELECT_KIND_LABELS[ch.kind]} pulls its choices live from Discord — no options list needed here.</p>`}
-
       <p class="hint">Rendered for layout/preview — selecting an option needs real bot code behind it, same as your Discord bot's JSON importer.</p>
     </div>`;
   }
@@ -1649,7 +1233,6 @@ https://example.com/two.png">${escapeHTML(ch.urls_raw)}</textarea>
   }
   return '';
 }
-
 function c_upd(key, val){ cv2State.containers[activeContainerIdx][key] = val; refreshPreviewDebounced(); }
 function c_toggleColor(enabled){ cv2State.containers[activeContainerIdx].color_enabled = enabled; renderAll(); }
 function addContainer(){ cv2State.containers.push(newContainer()); activeContainerIdx = cv2State.containers.length-1; renderAll(); }
@@ -1659,7 +1242,6 @@ function removeContainer(i){
   renderAll();
 }
 function selectContainer(i){ activeContainerIdx = i; renderAll(); }
-
 function addChild(type){
   const c = cv2State.containers[activeContainerIdx];
   let child = { type };
@@ -1671,7 +1253,12 @@ function addChild(type){
   c.children.push(child);
   renderAll();
 }
-function removeChild(i){ cv2State.containers[activeContainerIdx].children.splice(i,1); renderAll(); }
+/* Named removeCV2Child (not removeChild) — a global `removeChild` shadows
+   window.removeChild and can collide with Node.prototype.removeChild calls
+   made by browser extensions (Grammarly, translators, ad blockers) that
+   hold stale references after this app's innerHTML rewrites. That collision
+   is the source of "Failed to execute 'removeChild' on 'Node'" errors. */
+function removeCV2Child(i){ cv2State.containers[activeContainerIdx].children.splice(i,1); renderAll(); }
 function moveChild(i, dir){
   const arr = cv2State.containers[activeContainerIdx].children;
   const j = i+dir;
@@ -1689,7 +1276,6 @@ function btn_upd(i, bi, key, val){
   cv2State.containers[activeContainerIdx].children[i].buttons[bi][key] = (key==='style'? parseInt(val) : val);
   if(key==='style') renderAll(); else refreshPreviewDebounced();
 }
-
 function sel_upd(i, key, val){ cv2State.containers[activeContainerIdx].children[i][key] = val; refreshPreviewDebounced(); }
 function sel_updKind(i, val){ cv2State.containers[activeContainerIdx].children[i].kind = parseInt(val); renderAll(); }
 function addSelectOption(i){
@@ -1698,7 +1284,6 @@ function addSelectOption(i){
 }
 function removeSelectOption(i, oi){ cv2State.containers[activeContainerIdx].children[i].options.splice(oi,1); renderAll(); }
 function selopt_upd(i, oi, key, val){ cv2State.containers[activeContainerIdx].children[i].options[oi][key] = val; refreshPreviewDebounced(); }
-
 /* Shorthand <-> Discord emoji-object conversion, used for buttons and
    select options. Type either a raw unicode emoji (😀) or Discord's custom
    emoji shorthand (<:name:123456789012345678> / <a:name:...> for animated)
@@ -1714,16 +1299,6 @@ function emojiObjToShorthand(obj){
   if(obj.id) return `<${obj.animated ? 'a' : ''}:${obj.name}:${obj.id}>`;
   return obj.name;
 }
-/* Renders a raw Discord emoji OBJECT {name,id,animated} (as preserved
-   verbatim on 'raw' passthrough components) as an image or unicode text. */
-function emojiObjToHtml(obj){
-  if(!obj || !obj.name) return '';
-  if(obj.id){
-    const ext = obj.animated ? 'gif' : 'png';
-    return `<img class="md-emoji" src="https://cdn.discordapp.com/emojis/${obj.id}.${ext}" alt=":${obj.name}:" title=":${obj.name}:">`;
-  }
-  return escapeHTML(obj.name);
-}
 /* Renders an emoji shorthand string as either a real custom-emoji <img>
    (via Discord's public CDN) or leaves unicode emoji as plain text. */
 function renderEmojiShorthand(str){
@@ -1735,7 +1310,6 @@ function renderEmojiShorthand(str){
   }
   return escapeHTML(str);
 }
-
 /* =========================================================================
    PREVIEW RENDERING (Discord-authentic)
    ========================================================================= */
@@ -1743,7 +1317,6 @@ function timeNowLabel(){
   const d = new Date();
   return 'Today at ' + d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
 }
-
 function safePreviewUrl(value){
   if(!value) return '';
   try{
@@ -1753,33 +1326,31 @@ function safePreviewUrl(value){
     return '';
   }
 }
-
 function attr(value){ return escapeHTML(String(value ?? '')).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-
 function discordAvatarHTML(){
   return `<div class="dh-avatar-wrap"><img class="dh-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Your Bot" onerror="this.remove()"></div>`;
 }
-
 function externalLinkIcon(){
   return `<svg class="dh-external-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V7.41l-7.3 7.3a1 1 0 0 1-1.4-1.42L16.58 6H14a1 1 0 0 1-1-1Z"/><path fill="currentColor" d="M5 6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5a1 1 0 1 0-2 0v5H5V8h5a1 1 0 1 0 0-2H5Z"/></svg>`;
 }
-
 function chevronIcon(){
   return `<svg class="dh-select-chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.3 8.3a1 1 0 0 1 1.4 0l4.3 4.29 4.3-4.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 0 1 0-1.42Z"/></svg>`;
 }
-
 /* A field meant purely as a blank spacer (common Discord trick to force a
    line break between rows) is usually built with a true zero-width space. */
 function isSpacerLikeText(text){
   return !text || /^[\s\-–—_]*$/.test(text);
 }
-
+/* Discord's real single-inline-field layout: a lone trailing inline field
+   (not enough siblings to fill a row of 2 or 3) still renders at partial
+   width — not the full 12 columns a non-inline field gets. Confirmed
+   against Discohook's own field-grid behavior, which this preview follows. */
 function fieldColumnBounds(runLength, index){
   if(runLength === 3) return [[1,5],[5,9],[9,13]][index];
   if(runLength === 2) return [[1,7],[7,13]][index];
+  if(runLength === 1) return [1,7];
   return [1,13];
 }
-
 function buildOneField(f, start, end){
   const nameOut = isSpacerLikeText(f.name) ? '\u200b' : renderInlineMarkdown(f.name);
   const valueOut = isSpacerLikeText(f.value) ? '\u200b' : renderMarkdown(f.value);
@@ -1788,7 +1359,6 @@ function buildOneField(f, start, end){
     <div class="dh-field-value md-rich">${valueOut}</div>
   </div>`;
 }
-
 /* Matches Discohook's 12-column field algorithm: consecutive inline fields
    share a row (up to three); normal fields span all twelve columns. */
 function buildFieldRowsHTML(fields){
@@ -1815,7 +1385,6 @@ function buildFieldRowsHTML(fields){
   flush();
   return `<div class="dh-embed-fields">${output.join('')}</div>`;
 }
-
 function renderPreviewButton(button){
   const style = Number(button.style) || 2;
   const emoji = button.emoji ? renderEmojiShorthand(button.emoji) : '';
@@ -1823,7 +1392,6 @@ function renderPreviewButton(button){
   const contents = `<button type="button" class="dh-button style-${style}" tabindex="-1"><span class="dh-button-label">${emoji}${emoji ? ' ' : ''}${escapeHTML(button.label)||'Button'}</span>${style===5?externalLinkIcon():''}</button>`;
   return link ? `<a href="${attr(link)}" target="_blank" rel="noreferrer noopener" class="contents">${contents}</a>` : contents;
 }
-
 function renderMessageShell(inner, includeContent=true){
   return `<div class="dh-message">
     ${discordAvatarHTML()}
@@ -1834,10 +1402,9 @@ function renderMessageShell(inner, includeContent=true){
     </div>
   </div>`;
 }
-
 function renderClassicEmbed(e){
   if(!(e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text||e.timestamp)) return '';
-  const accent = e.color_enabled ? e.color : '#4a4a50';
+  const accent = e.color_enabled ? (normalizeHex(e.color) || '#5865f2') : '#4a4a50';
   const authorUrl = safePreviewUrl(e.author.url);
   const titleUrl = safePreviewUrl(e.url);
   const authorIcon = safePreviewUrl(e.author.icon_url);
@@ -1845,7 +1412,6 @@ function renderClassicEmbed(e){
   const image = safePreviewUrl(e.image.url);
   const footerIcon = safePreviewUrl(e.footer.icon_url);
   const fields = buildFieldRowsHTML(e.fields);
-
   return `<div class="dh-embed" style="--embed-accent:${attr(accent)}">
     ${e.author.name ? `<div class="dh-embed-author">${authorIcon?`<img class="dh-embed-author-icon" src="${attr(authorIcon)}" alt="" onerror="this.remove()">`:''}<div class="dh-embed-author-name">${authorUrl?`<a href="${attr(authorUrl)}" target="_blank" rel="noreferrer noopener">${escapeHTML(e.author.name)}</a>`:escapeHTML(e.author.name)}</div></div>`:''}
     ${e.title ? `<div class="dh-embed-title md-rich">${titleUrl?`<a href="${attr(titleUrl)}" target="_blank" rel="noreferrer noopener">${renderInlineMarkdown(e.title)}</a>`:renderInlineMarkdown(e.title)}</div>`:''}
@@ -1856,7 +1422,6 @@ function renderClassicEmbed(e){
     ${thumb?`<img class="dh-embed-thumb" src="${attr(thumb)}" alt="Thumbnail" onerror="this.remove()">`:''}
   </div>`;
 }
-
 function renderClassicPreview(){
   const wrap = document.getElementById('preview-discord');
   const embeds = classicState.embeds.map(renderClassicEmbed).filter(Boolean).join('');
@@ -1867,7 +1432,6 @@ function renderClassicPreview(){
   if(!classicState.content && !accessories) accessories = `<div class="dh-empty">Nothing to preview yet — fill in a field on the left.</div>`;
   wrap.innerHTML = renderMessageShell(accessories, true);
 }
-
 let previewSelectCounter = 0;
 function togglePreviewSelect(event, id){
   event.stopPropagation();
@@ -1878,12 +1442,10 @@ if(!window.__embedForgePreviewSelectBound){
   document.addEventListener('click', ()=>document.querySelectorAll('.dh-select-wrap.open').forEach(el=>el.classList.remove('open')));
   window.__embedForgePreviewSelectBound = true;
 }
-
 function renderSelectOption(option){
   const emoji = option.emoji ? renderEmojiShorthand(option.emoji) : '';
   return `<div class="dh-select-option">${emoji?`<span class="dh-select-option-icon">${emoji}</span>`:''}<div class="dh-select-option-copy"><div class="dh-select-option-title">${escapeHTML(option.label||'Option')}</div>${option.description?`<div class="dh-select-option-desc">${escapeHTML(option.description)}</div>`:''}</div></div>`;
 }
-
 function renderSelectMenu(ch){
   const id = `dh-select-${++previewSelectCounter}`;
   const label = escapeHTML(ch.placeholder) || SELECT_KIND_LABELS[ch.kind] || 'Select menu';
@@ -1895,7 +1457,6 @@ function renderSelectMenu(ch){
   }
   return `<div class="dh-select-wrap" id="${id}"><button type="button" class="dh-select" onclick="togglePreviewSelect(event,'${id}')"><span class="dh-select-label">${label}</span>${chevronIcon()}</button><div class="dh-select-menu" onclick="event.stopPropagation()">${options}</div></div>`;
 }
-
 function renderGalleryUrls(urls){
   const clean = urls.map(safePreviewUrl).filter(Boolean).slice(0,10);
   if(!clean.length) return '';
@@ -1903,7 +1464,6 @@ function renderGalleryUrls(urls){
   const countClass = clean.length===1?'count-1':clean.length===2?'count-2':clean.length===3?'count-3':clean.length===4?'count-4':'many';
   return `<div class="dh-gallery ${countClass}">${shown.map((url,i)=>`<div class="dh-gallery-item"><img class="dh-gallery-image" src="${attr(url)}" alt="" onerror="this.parentElement.remove()">${i===3&&clean.length>4?`<div class="dh-gallery-more">+${clean.length-4}</div>`:''}</div>`).join('')}</div>`;
 }
-
 function renderRawComponent(original){
   if(!original) return `<div class="dh-text-display">Preserved component (details unavailable).</div>`;
   if(original.type===1){
@@ -1916,7 +1476,6 @@ function renderRawComponent(original){
   }
   return `<div class="dh-text-display">Preserved component type ${escapeHTML(String(original.type??'?'))}.</div>`;
 }
-
 function renderCV2Child(ch){
   if(ch.type==='text') return `<div class="dh-text-display md-rich">${renderMarkdown(ch.content)}</div>`;
   if(ch.type==='separator') return `<hr class="dh-separator">`;
@@ -1930,27 +1489,24 @@ function renderCV2Child(ch){
   if(ch.type==='raw') return renderRawComponent(ch.original);
   return '';
 }
-
 function renderCV2Preview(){
   const wrap=document.getElementById('preview-discord');
   previewSelectCounter=0;
   const containers=cv2State.containers.map(c=>{
     const children=c.children.map(renderCV2Child).filter(Boolean).join('');
     if(!children.trim()) return '';
-    const accent=c.color_enabled?c.accent_color:'';
+    const accent=c.color_enabled?(normalizeHex(c.accent_color) || '#5865f2'):'';
     return `<div class="dh-container ${accent?'has-accent':''}" style="${accent?`--container-accent:${attr(accent)}`:''}">${children}</div>`;
   }).filter(Boolean).join('');
   const body=containers?`<div class="dh-components">${containers}</div>`:`<div class="dh-empty">Nothing to preview yet — add a container child on the left.</div>`;
   wrap.innerHTML=renderMessageShell(body,false);
 }
-
 /* =========================================================================
    JSON GENERATION
    ========================================================================= */
 function buildClassicJSON(){
   const payload = {};
   if(classicState.content) payload.content = classicState.content;
-
   const embeds = classicState.embeds
     .filter(e => e.title||e.description||e.fields.length||e.image.url||e.thumbnail.url||e.author.name||e.footer.text||e.url)
     .map(e => {
@@ -1967,10 +1523,8 @@ function buildClassicJSON(){
       if(e.fields.length) d.fields = e.fields.filter(f=>f.name||f.value).map(f=>({name:f.name||'\u200b', value:f.value||'\u200b', inline:!!f.inline}));
       return d;
     });
-
   if(embeds.length === 1) payload.embed = embeds[0];
   else if(embeds.length > 1) payload.embeds = embeds;
-
   const rows = classicState.buttonRows
     .filter(row => row.length)
     .map(row => ({
@@ -1984,10 +1538,8 @@ function buildClassicJSON(){
       })
     }));
   if(rows.length) payload.components = rows;
-
   return payload;
 }
-
 function buildCV2JSON(){
   const components = cv2State.containers.map(c => {
     const kids = c.children.map(ch => {
@@ -2031,19 +1583,15 @@ function buildCV2JSON(){
       if(ch.type==='raw') return ch.original || null;
       return null;
     }).filter(Boolean);
-
     const containerObj = { type:17, components: kids };
     if(c.color_enabled) containerObj.accent_color = hexToInt(c.accent_color);
     return containerObj;
   }).filter(c => c.components.length);
-
   return { flags: 32768, components };
 }
-
 function currentJSON(){
   return mode==='classic' ? buildClassicJSON() : buildCV2JSON();
 }
-
 /* Real Discord API limits — these are hard rejections, not stylistic
    preferences. Surfacing them here means you find out BEFORE pasting into
    your bot, not after Discord's error comes back. */
@@ -2053,27 +1601,39 @@ const DISCORD_LIMITS = {
   embedCount: 10, buttonLabel: 80, textDisplay: 4000, containerChildren: 10,
   totalComponents: 40, legacyRows: 5, legacyRowButtons: 5, selectOptionsMax: 25
 };
-
-function countCV2Components(containers){
-  let total = 0;
-  const countChild = (ch) => {
-    total += 1;
-    if(ch.type === 'section') total += 1; // its own thumbnail/text child
-    if(ch.type === 'actionrow') total += 1 + ch.buttons.length;
-    if(ch.type === 'select') total += 2; // wrapping action row + the select itself
-    if(ch.type === 'raw' && ch.original) total += 1;
-  };
-  for(const c of containers){
-    total += 1; // the container itself
-    c.children.forEach(countChild);
+/* Discord's real component-counting rule walks the ENTIRE tree and counts
+   every node once (containers, rows, buttons, selects, text displays,
+   sections, their accessories, gallery items — everything), not a flat
+   heuristic per child type. This mirrors that exactly instead of guessing
+   fixed offsets per type, so the 40-limit warning can actually be trusted. */
+function countCV2Node(ch){
+  let total = 1; // this node itself
+  if(ch.type === 'section'){
+    total += 1; // its own text-display child
+    if(ch.thumbnail_url) total += 1; // its thumbnail accessory
+  } else if(ch.type === 'actionrow'){
+    total += ch.buttons.length; // each button inside the row
+  } else if(ch.type === 'select'){
+    total += 1; // the wrapping action row this select lives in
+  } else if(ch.type === 'gallery'){
+    const urls = (ch.urls_raw||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    total += urls.length; // each gallery item
+  } else if(ch.type === 'raw' && ch.original && Array.isArray(ch.original.components)){
+    total += ch.original.components.length;
   }
   return total;
 }
-
+function countCV2Components(containers){
+  let total = 0;
+  for(const c of containers){
+    total += 1; // the container itself
+    for(const ch of c.children) total += countCV2Node(ch);
+  }
+  return total;
+}
 function computeLimitWarnings(){
   const warnings = [];
   const L = DISCORD_LIMITS;
-
   if(mode === 'classic'){
     if(classicState.content.length > L.content){
       warnings.push(`Message content is ${classicState.content.length}/${L.content} characters.`);
@@ -2083,6 +1643,7 @@ function computeLimitWarnings(){
     }
     classicState.embeds.forEach((e, idx) => {
       const tag = classicState.embeds.length > 1 ? `Embed ${idx+1}: ` : '';
+      if(e.color_enabled && !isValidHex(e.color)) warnings.push(`${tag}Color "${e.color}" isn't a valid hex code — export will fall back to Discord blurple.`);
       if(e.title.length > L.title) warnings.push(`${tag}Title is ${e.title.length}/${L.title} characters.`);
       if(e.description.length > L.description) warnings.push(`${tag}Description is ${e.description.length}/${L.description} characters.`);
       if(e.footer.text.length > L.footerText) warnings.push(`${tag}Footer text is ${e.footer.text.length}/${L.footerText} characters.`);
@@ -2101,20 +1662,27 @@ function computeLimitWarnings(){
     }
     classicState.buttonRows.forEach((row, ri) => {
       if(row.length > L.legacyRowButtons) warnings.push(`Button row ${ri+1} has ${row.length}/${L.legacyRowButtons} buttons.`);
-      row.forEach((b, bi) => { if((b.label||'').length > L.buttonLabel) warnings.push(`Button row ${ri+1}, button ${bi+1}: label is ${b.label.length}/${L.buttonLabel} characters.`); });
+      row.forEach((b, bi) => {
+        if((b.label||'').length > L.buttonLabel) warnings.push(`Button row ${ri+1}, button ${bi+1}: label is ${b.label.length}/${L.buttonLabel} characters.`);
+        if(b.style===5 && !b.url) warnings.push(`Button row ${ri+1}, button ${bi+1}: link buttons need a URL or Discord will reject the message.`);
+      });
     });
   } else {
     const total = countCV2Components(cv2State.containers);
     if(total > L.totalComponents) warnings.push(`${total}/${L.totalComponents} total components (everything nested included) — Discord will reject this.`);
     cv2State.containers.forEach((c, ci) => {
       const tag = cv2State.containers.length > 1 ? `Container ${ci+1}: ` : '';
+      if(c.color_enabled && !isValidHex(c.accent_color)) warnings.push(`${tag}Accent color "${c.accent_color}" isn't a valid hex code — export will fall back to Discord blurple.`);
       if(c.children.length > L.containerChildren) warnings.push(`${tag}${c.children.length}/${L.containerChildren} children.`);
       c.children.forEach((ch, chi) => {
         if(ch.type === 'text' && ch.content.length > L.textDisplay) warnings.push(`${tag}Text ${chi+1} is ${ch.content.length}/${L.textDisplay} characters.`);
         if(ch.type === 'section' && ch.content.length > L.textDisplay) warnings.push(`${tag}Section ${chi+1} text is ${ch.content.length}/${L.textDisplay} characters.`);
         if(ch.type === 'actionrow'){
           if(ch.buttons.length > L.legacyRowButtons) warnings.push(`${tag}Button row ${chi+1} has ${ch.buttons.length}/${L.legacyRowButtons} buttons.`);
-          ch.buttons.forEach((b, bi) => { if((b.label||'').length > L.buttonLabel) warnings.push(`${tag}Button row ${chi+1}, button ${bi+1}: label is ${b.label.length}/${L.buttonLabel} characters.`); });
+          ch.buttons.forEach((b, bi) => {
+            if((b.label||'').length > L.buttonLabel) warnings.push(`${tag}Button row ${chi+1}, button ${bi+1}: label is ${b.label.length}/${L.buttonLabel} characters.`);
+            if(b.style===5 && !b.url) warnings.push(`${tag}Button row ${chi+1}, button ${bi+1}: link buttons need a URL or Discord will reject the message.`);
+          });
         }
         if(ch.type === 'select' && ch.kind === 3 && ch.options.length > L.selectOptionsMax){
           warnings.push(`${tag}Select ${chi+1} has ${ch.options.length}/${L.selectOptionsMax} options.`);
@@ -2122,16 +1690,13 @@ function computeLimitWarnings(){
       });
     });
   }
-
   return warnings;
 }
-
 function renderLimitWarnings(){
   const el = document.getElementById('limit-warnings');
   const warnings = computeLimitWarnings();
   el.innerHTML = warnings.map(w => `<div class="limit-warning">⚠ ${escapeHTML(w)}</div>`).join('');
 }
-
 function renderJSON(){
   document.getElementById('json-output').value = JSON.stringify(currentJSON(), null, 2);
   renderLimitWarnings();
@@ -2139,7 +1704,6 @@ function renderJSON(){
   statusEl.textContent = 'In sync with the builder above.';
   statusEl.className = 'import-status idle';
 }
-
 function copyJSON(){
   const ta = document.getElementById('json-output');
   ta.select();
@@ -2149,7 +1713,6 @@ function copyJSON(){
     setTimeout(()=>f.classList.remove('show'), 1400);
   }).catch(()=>{ document.execCommand('copy'); });
 }
-
 function downloadJSON(){
   const blob = new Blob([JSON.stringify(currentJSON(), null, 2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -2158,15 +1721,12 @@ function downloadJSON(){
   a.click();
   URL.revokeObjectURL(a.href);
 }
-
 /* =========================================================================
    JSON IMPORT — auto-parses whatever's in the textarea, debounced, so you
    can paste raw Discord dumps OR hand-edit an embed you just built, and it
    reflects back into the builder + preview without a manual button click.
    ========================================================================= */
-
 function clampByte(n){ return Math.max(0, Math.min(255, Math.round(n))); }
-
 function hslToHex(h, s, l){
   h = ((h % 360) + 360) % 360;
   s = Math.max(0, Math.min(1, s));
@@ -2181,13 +1741,12 @@ function hslToHex(h, s, l){
   r = clampByte((r+m)*255); g = clampByte((g+m)*255); b = clampByte((b+m)*255);
   return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
-
 function colorAnyToHex(value){
   if(value === null || value === undefined) return null;
   if(typeof value === 'number') return '#' + (value & 0xFFFFFF).toString(16).padStart(6,'0');
   if(typeof value !== 'string') return null;
   const s = value.trim();
-  if(s.startsWith('#')) return s.length===7 ? s : null;
+  if(s.startsWith('#')) return isValidHex(s) ? normalizeHex(s) : null;
   if(s.startsWith('rgb')){
     const nums = s.match(/[\d.]+/g);
     if(!nums || nums.length<3) return null;
@@ -2204,7 +1763,6 @@ function colorAnyToHex(value){
   const asInt = parseInt(s, 0);
   return isNaN(asInt) ? null : '#' + (asInt & 0xFFFFFF).toString(16).padStart(6,'0');
 }
-
 function cleanComponentNode(node){
   if(!node || typeof node !== 'object') return node;
   const out = { type: node.type };
@@ -2233,7 +1791,6 @@ function cleanComponentNode(node){
   if(Array.isArray(node.components)){ out.components = node.components.map(cleanComponentNode); }
   return out;
 }
-
 function isComponentsV2Payload(parsed){
   const comps = parsed.components;
   if(!Array.isArray(comps) || comps.length===0) return false;
@@ -2242,7 +1799,6 @@ function isComponentsV2Payload(parsed){
   const hasBody = parsed.content != null || 'embed' in parsed || 'embeds' in parsed;
   return !hasBody;
 }
-
 function normalizeEmbedDict(raw){
   if(!raw || typeof raw !== 'object') return newEmbed();
   const e = newEmbed();
@@ -2274,9 +1830,13 @@ function normalizeEmbedDict(raw){
   }
   return e;
 }
-
-function buildClassicStateFromPayload(parsed){
-  const state = { content: parsed.content ?? '', embeds: [], buttonRows: [] };
+/* Rows that aren't all plain buttons (e.g. a legacy action row wrapping a
+   select menu) have nowhere to go in the classic builder's UI — rather
+   than silently dropping them, they're preserved as an opaque CV2-style
+   raw child so nothing pasted in is ever lost, and the status message
+   below tells the user this happened. */
+function buildClassicStateFromPayload(parsed, warnings){
+  const state = { content: parsed.content ?? '', embeds: [], buttonRows: [], extraRaw: [] };
   if(Array.isArray(parsed.embeds) && parsed.embeds.length){
     state.embeds = parsed.embeds.map(normalizeEmbedDict);
   } else if(parsed.embed){
@@ -2284,7 +1844,6 @@ function buildClassicStateFromPayload(parsed){
   } else {
     state.embeds = [newEmbed()];
   }
-
   if(Array.isArray(parsed.components)){
     for(const row of parsed.components){
       if(!row || row.type !== 1) continue;
@@ -2295,17 +1854,14 @@ function buildClassicStateFromPayload(parsed){
           style: b.style ?? 5, label: b.label ?? '', url: b.url ?? '',
           emoji: emojiObjToShorthand(b.emoji)
         })));
+      } else if(kids.length){
+        state.extraRaw.push(cleanComponentNode(row));
+        warnings.push('A component row with a select menu (or mixed content) was preserved as raw JSON but has no editor in Classic mode — switch to Components V2, or edit it directly in the JSON tab.');
       }
-      // Rows containing a select menu aren't supported in the legacy
-      // builder's UI yet — skipped rather than crashing, but this is a
-      // real gap: a legacy row with a select menu currently has nowhere
-      // to go and gets dropped, same as buttons used to before this fix.
     }
   }
-
   return state;
 }
-
 function parseCV2Child(raw){
   const t = raw.type;
   if(t === 10) return { type:'text', content: raw.content ?? '' };
@@ -2349,11 +1905,9 @@ function parseCV2Child(raw){
   }
   return { type:'raw', original: cleanComponentNode(raw) };
 }
-
 function buildCV2StateFromPayload(parsed){
   const topLevel = Array.isArray(parsed.components) ? parsed.components : [];
   const containers = [];
-
   for(const comp of topLevel){
     if(comp && comp.type === 17){
       const resolved = colorAnyToHex(comp.accentColor ?? comp.accent_color);
@@ -2366,10 +1920,8 @@ function buildCV2StateFromPayload(parsed){
       containers.push({ accent_color:'#5865f2', color_enabled:false, children: [parseCV2Child(comp)] });
     }
   }
-
   return { containers: containers.length ? containers : [newContainer()] };
 }
-
 let importDebounceTimer = null;
 function onJSONTextareaInput(){
   clearTimeout(importDebounceTimer);
@@ -2378,17 +1930,14 @@ function onJSONTextareaInput(){
   statusEl.className = 'import-status idle';
   importDebounceTimer = setTimeout(runAutoImport, 300);
 }
-
 function runAutoImport(){
   const statusEl = document.getElementById('import-status');
   const raw = document.getElementById('json-output').value;
-
   if(!raw.trim()){
     statusEl.textContent = 'Nothing to build yet.';
     statusEl.className = 'import-status idle';
     return;
   }
-
   let parsed;
   try{
     parsed = JSON.parse(raw);
@@ -2402,7 +1951,7 @@ function runAutoImport(){
     statusEl.className = 'import-status err';
     return;
   }
-
+  const importWarnings = [];
   try{
     hydrateMentionLookup(parsed);
     if(isComponentsV2Payload(parsed)){
@@ -2410,7 +1959,7 @@ function runAutoImport(){
       activeContainerIdx = 0;
       mode = 'cv2';
     } else {
-      classicState = buildClassicStateFromPayload(parsed);
+      classicState = buildClassicStateFromPayload(parsed, importWarnings);
       activeEmbedIdx = 0;
       mode = 'classic';
     }
@@ -2419,20 +1968,17 @@ function runAutoImport(){
     statusEl.className = 'import-status err';
     return;
   }
-
   document.getElementById('tab-classic').classList.toggle('active', mode==='classic');
   document.getElementById('tab-cv2').classList.toggle('active', mode==='cv2');
   document.getElementById('builder-classic').style.display = mode==='classic' ? 'block':'none';
   document.getElementById('builder-cv2').style.display = mode==='cv2' ? 'block':'none';
-
   if(mode==='classic') renderClassicBuilder(); else renderCV2Builder();
   if(mode==='classic') renderClassicPreview(); else renderCV2Preview();
   renderJSON();
-
-  statusEl.textContent = '✓ Built — showing ' + (mode==='cv2' ? 'Components V2' : 'Classic Embed') + '. Check the Preview tab.';
+  const base = '✓ Built — showing ' + (mode==='cv2' ? 'Components V2' : 'Classic Embed') + '. Check the Preview tab.';
+  statusEl.textContent = importWarnings.length ? base + ' ' + importWarnings.join(' ') : base;
   statusEl.className = 'import-status ok';
 }
-
 /* =========================================================================
    SAMPLE / RESET
    ========================================================================= */
@@ -2443,7 +1989,6 @@ function runAutoImport(){
    ========================================================================= */
 const TEMPLATE_INDEX_KEY = 'embedforge:index';
 const TEMPLATE_PREFIX = 'embedforge:tpl:';
-
 function getTemplateIndex(){
   try{
     const raw = localStorage.getItem(TEMPLATE_INDEX_KEY);
@@ -2453,18 +1998,15 @@ function getTemplateIndex(){
     return [];
   }
 }
-
 function setTemplateIndex(names){
   localStorage.setItem(TEMPLATE_INDEX_KEY, JSON.stringify(names));
 }
-
 function renderTemplateDropdown(selectedName){
   const el = document.getElementById('template-select');
   const names = getTemplateIndex();
   el.innerHTML = '<option value="">Load template...</option>' +
     names.map(n => `<option value="${attr(n)}" ${n===selectedName?'selected':''}>${escapeHTML(n)}</option>`).join('');
 }
-
 function saveTemplate(){
   const suggested = mode === 'classic'
     ? (classicState.embeds[0]?.title || 'Untitled embed')
@@ -2472,7 +2014,6 @@ function saveTemplate(){
   const name = prompt('Save this as a template named:', suggested);
   if(!name || !name.trim()) return;
   const trimmed = name.trim();
-
   const blob = { mode, classicState, cv2State };
   try{
     localStorage.setItem(TEMPLATE_PREFIX + trimmed, JSON.stringify(blob));
@@ -2480,7 +2021,6 @@ function saveTemplate(){
     alert('Could not save — your browser\'s local storage may be full or disabled.\n\n' + err.message);
     return;
   }
-
   const names = getTemplateIndex();
   if(!names.includes(trimmed)){
     names.push(trimmed);
@@ -2488,12 +2028,10 @@ function saveTemplate(){
   }
   renderTemplateDropdown(trimmed);
 }
-
 function onTemplateSelectChange(name){
   if(!name) return;
   loadTemplate(name);
 }
-
 function loadTemplate(name){
   let blob;
   try{
@@ -2504,13 +2042,11 @@ function loadTemplate(name){
     alert('Could not load that template: ' + err.message);
     return;
   }
-
   if(blob.classicState) classicState = blob.classicState;
   if(blob.cv2State) cv2State = blob.cv2State;
   activeEmbedIdx = 0;
   activeContainerIdx = 0;
   mode = blob.mode === 'cv2' ? 'cv2' : 'classic';
-
   document.getElementById('tab-classic').classList.toggle('active', mode==='classic');
   document.getElementById('tab-cv2').classList.toggle('active', mode==='cv2');
   document.getElementById('builder-classic').style.display = mode==='classic' ? 'block':'none';
@@ -2518,19 +2054,16 @@ function loadTemplate(name){
   renderTemplateDropdown(name);
   renderAll();
 }
-
 function deleteSelectedTemplate(){
   const select = document.getElementById('template-select');
   const name = select.value;
   if(!name){ alert('Pick a template from the dropdown first.'); return; }
   if(!confirm(`Delete the template "${name}"? This can't be undone.`)) return;
-
   localStorage.removeItem(TEMPLATE_PREFIX + name);
   const names = getTemplateIndex().filter(n => n !== name);
   setTemplateIndex(names);
   renderTemplateDropdown();
 }
-
 function loadSample(){
   if(mode==='classic'){
     classicState = {
@@ -2574,13 +2107,11 @@ function loadSample(){
   }
   renderAll();
 }
-
 function resetAll(){
   if(mode==='classic'){ classicState = {content:'', embeds:[newEmbed()], buttonRows:[]}; activeEmbedIdx = 0; }
   else { cv2State = {containers:[newContainer()]}; activeContainerIdx = 0; }
   renderAll();
 }
-
 /* =========================================================================
    MASTER RENDER
    refreshPreview(): cheap, called on every keystroke — never touches the
@@ -2594,7 +2125,6 @@ function refreshPreview(){
   if(mode==='classic') renderClassicPreview(); else renderCV2Preview();
   renderJSON();
 }
-
 /* Typing in a text field calls refreshPreview() on every keystroke. That's
    fine for small embeds, but a large CV2 message (many containers/fields)
    re-parses all its markdown and rebuilds the whole JSON string on every
@@ -2605,12 +2135,10 @@ function refreshPreviewDebounced(){
   clearTimeout(refreshPreviewTimer);
   refreshPreviewTimer = setTimeout(refreshPreview, 120);
 }
-
 function renderAll(){
   if(mode==='classic') renderClassicBuilder(); else renderCV2Builder();
   refreshPreview();
 }
-
 renderAll();
 renderTemplateDropdown();
 </script>
